@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Livia fyller 8 – du är bjuden!</title>
+  <meta name="description" content="Du är bjuden på Livias pyjamas- och filmmyskalas!" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <main id="app">
+
+    <!-- INTRO -->
+    <section class="act act-intro" id="intro">
+      <div class="sky-bg">
+        <div class="stars-container" id="stars"></div>
+        <svg class="moon" viewBox="0 0 120 120" width="100" height="100" aria-hidden="true">
+          <circle cx="60" cy="60" r="50" fill="#FDE68A" />
+          <circle cx="80" cy="45" r="42" fill="#0F172A" />
+          <circle cx="40" cy="42" r="5" fill="#FDE68A" opacity="0.3" />
+          <circle cx="55" cy="70" r="3" fill="#FDE68A" opacity="0.2" />
+        </svg>
+      </div>
+      <div class="intro-content">
+        <div class="hero-frame" id="hero-frame">
+          <picture>
+            <source srcset="livia-hero.webp" type="image/webp" />
+            <img src="livia-hero.jpg" alt="Livia" width="300" height="300" />
+          </picture>
+        </div>
+        <h1 class="title" id="main-title">
+          <span class="greeting" id="greeting"></span>
+          <span class="title-main">Livia fyller 8!</span>
+        </h1>
+        <p class="subtitle">...och du är bjuden på<br><strong>pyjamas- och filmmyskalas</strong></p>
+        <div class="scroll-hint" id="scroll-hint">
+          <span>Scrolla ner</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 5v14M5 12l7 7 7-7"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- AKT 1 — NÄR -->
+    <section class="act act-when" id="act-when">
+      <div class="act-inner">
+        <h2 class="act-label">Akt 1</h2>
+        <div class="ticket" id="ticket">
+          <svg class="ticket-svg" viewBox="0 0 340 200" aria-hidden="true">
+            <!-- Ticket background -->
+            <rect x="2" y="2" width="336" height="196" rx="16" fill="#1E293B" stroke="#F9A8D4" stroke-width="2"/>
+            <!-- Perforation line -->
+            <line x1="230" y1="0" x2="230" y2="200" stroke="#F9A8D4" stroke-dasharray="6,6" stroke-width="1.5" opacity="0.6"/>
+            <!-- Film strip decoration -->
+            <rect x="12" y="12" width="20" height="14" rx="2" fill="#FBBF24" opacity="0.4"/>
+            <rect x="12" y="30" width="20" height="14" rx="2" fill="#FBBF24" opacity="0.3"/>
+            <rect x="12" y="48" width="20" height="14" rx="2" fill="#FBBF24" opacity="0.2"/>
+            <!-- Star decorations on stub -->
+            <circle cx="280" cy="40" r="3" fill="#FBBF24" opacity="0.6"/>
+            <circle cx="300" cy="60" r="2" fill="#F9A8D4" opacity="0.5"/>
+            <circle cx="270" cy="80" r="2.5" fill="#FBBF24" opacity="0.4"/>
+            <circle cx="310" cy="100" r="2" fill="#F9A8D4" opacity="0.3"/>
+            <!-- Admit one text on stub -->
+            <text x="290" y="150" text-anchor="middle" fill="#F9A8D4" font-size="9" font-family="Fredoka, sans-serif" opacity="0.7" transform="rotate(-90 290 150)">BILJETT</text>
+          </svg>
+          <div class="ticket-content">
+            <p class="ticket-date" id="ticket-date"></p>
+            <p class="ticket-time" id="ticket-time"></p>
+            <p class="ticket-dresscode" id="ticket-dresscode"></p>
+          </div>
+        </div>
+        <div class="countdown" id="countdown"></div>
+      </div>
+    </section>
+
+    <!-- AKT 2 — VAR -->
+    <section class="act act-where" id="act-where">
+      <div class="act-inner">
+        <h2 class="act-label">Akt 2</h2>
+        <div class="signpost-wrapper" id="signpost-wrapper">
+          <svg class="signpost-svg" id="signpost-svg" viewBox="0 0 200 280" width="160" height="224" role="button" tabindex="0" aria-label="Visa adress">
+            <!-- Post -->
+            <rect x="92" y="60" width="16" height="210" rx="4" fill="#92400E"/>
+            <rect x="94" y="60" width="4" height="210" fill="#A16207" opacity="0.3"/>
+            <!-- Ground -->
+            <ellipse cx="100" cy="270" rx="50" ry="10" fill="#166534" opacity="0.5"/>
+            <!-- Sign arm -->
+            <g id="sign-arm" transform-origin="100 90">
+              <rect x="40" y="65" width="140" height="50" rx="8" fill="#7C3AED"/>
+              <rect x="40" y="65" width="140" height="6" rx="3" fill="#8B5CF6" opacity="0.4"/>
+              <text x="110" y="97" text-anchor="middle" fill="white" font-size="15" font-family="Fredoka, sans-serif" font-weight="600">Hemma hos oss</text>
+              <!-- Arrow -->
+              <polygon points="180,78 195,90 180,102" fill="#A78BFA"/>
+            </g>
+            <!-- Compass rose at top -->
+            <circle cx="100" cy="40" r="22" fill="#1E293B" stroke="#FBBF24" stroke-width="2"/>
+            <text x="100" y="35" text-anchor="middle" fill="#FBBF24" font-size="8" font-family="Fredoka, sans-serif">N</text>
+            <text x="100" y="55" text-anchor="middle" fill="#FBBF24" font-size="7" font-family="Fredoka, sans-serif">S</text>
+            <text x="83" y="45" text-anchor="middle" fill="#FBBF24" font-size="7" font-family="Fredoka, sans-serif">V</text>
+            <text x="117" y="45" text-anchor="middle" fill="#FBBF24" font-size="7" font-family="Fredoka, sans-serif">O</text>
+            <line x1="100" y1="22" x2="100" y2="58" stroke="#FBBF24" stroke-width="1" opacity="0.3"/>
+            <line x1="82" y1="40" x2="118" y2="40" stroke="#FBBF24" stroke-width="1" opacity="0.3"/>
+            <!-- Compass needle -->
+            <polygon points="100,25 97,40 103,40" fill="#EF4444"/>
+            <polygon points="100,55 97,40 103,40" fill="#CBD5E1"/>
+          </svg>
+          <p class="tap-hint" id="tap-hint">Tryck för att se adressen</p>
+        </div>
+        <!-- Address always in DOM for accessibility -->
+        <div class="address-card" id="address-card" aria-live="polite">
+          <p class="address-street" id="address-street"></p>
+          <p class="address-postal" id="address-postal"></p>
+          <div class="map-buttons">
+            <a class="btn btn-map" id="btn-google-maps" href="#" target="_blank" rel="noopener noreferrer">Öppna i Google Maps</a>
+            <a class="btn btn-map" id="btn-apple-maps" href="#" target="_blank" rel="noopener noreferrer">Öppna i Apple Kartor</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AKT 3 — VAD HÄNDER -->
+    <section class="act act-program" id="act-program">
+      <div class="act-inner">
+        <h2 class="act-label">Akt 3</h2>
+        <h3 class="act-title">Kvällens program</h3>
+
+        <div class="program-beat beat-left" id="beat-pizza">
+          <div class="beat-illustration">
+            <!-- Pizza slice SVG -->
+            <svg viewBox="0 0 120 120" width="80" height="80" aria-hidden="true">
+              <path d="M60 15 L105 100 Q60 115 15 100 Z" fill="#EF4444" stroke="#DC2626" stroke-width="2"/>
+              <path d="M60 15 L105 100 Q60 115 15 100 Z" fill="#FBBF24" opacity="0.8" transform="scale(0.92) translate(5, 5)"/>
+              <!-- Cheese -->
+              <path d="M60 25 L95 95 Q60 105 25 95 Z" fill="#FDE68A"/>
+              <!-- Pepperoni -->
+              <circle cx="55" cy="55" r="7" fill="#DC2626"/>
+              <circle cx="70" cy="75" r="6" fill="#DC2626"/>
+              <circle cx="42" cy="78" r="5" fill="#DC2626"/>
+              <!-- Olive -->
+              <circle cx="60" cy="40" r="4" fill="#365314" opacity="0.7"/>
+            </svg>
+          </div>
+          <div class="beat-content">
+            <p class="beat-text" id="beat-pizza-text"></p>
+            <div class="polaroid" id="polaroid-pizza">
+              <picture>
+                <source srcset="livia-pizza.webp" type="image/webp" />
+                <img src="livia-pizza.jpg" alt="Pizza" loading="lazy" width="200" height="200" />
+              </picture>
+            </div>
+          </div>
+        </div>
+
+        <div class="program-beat beat-right" id="beat-movie">
+          <div class="beat-content">
+            <p class="beat-text" id="beat-movie-text"></p>
+          </div>
+          <div class="beat-illustration">
+            <!-- Pillows + Popcorn SVG -->
+            <svg viewBox="0 0 140 120" width="112" height="96" aria-hidden="true">
+              <!-- Pillow 1 -->
+              <rect x="5" y="50" width="55" height="40" rx="14" fill="#F9A8D4" transform="rotate(-8 32 70)"/>
+              <rect x="8" y="53" width="49" height="34" rx="12" fill="#FBCFE8" transform="rotate(-8 32 70)"/>
+              <!-- lines on pillow -->
+              <line x1="18" y1="62" x2="46" y2="58" stroke="#F9A8D4" stroke-width="1.5" opacity="0.5" transform="rotate(-8 32 70)"/>
+              <line x1="18" y1="72" x2="46" y2="68" stroke="#F9A8D4" stroke-width="1.5" opacity="0.5" transform="rotate(-8 32 70)"/>
+              <!-- Pillow 2 -->
+              <rect x="40" y="55" width="50" height="38" rx="14" fill="#C4B5FD" transform="rotate(5 65 74)"/>
+              <rect x="43" y="58" width="44" height="32" rx="12" fill="#DDD6FE" transform="rotate(5 65 74)"/>
+              <!-- Popcorn bucket -->
+              <path d="M85 35 L75 95 L130 95 L120 35 Z" fill="#EF4444" stroke="#DC2626" stroke-width="1.5"/>
+              <!-- Stripes -->
+              <path d="M88 35 L80 95" stroke="white" stroke-width="3" opacity="0.3"/>
+              <path d="M98 35 L92 95" stroke="white" stroke-width="3" opacity="0.3"/>
+              <path d="M108 35 L104 95" stroke="white" stroke-width="3" opacity="0.3"/>
+              <path d="M118 35 L116 95" stroke="white" stroke-width="3" opacity="0.3"/>
+              <!-- Popcorn kernels -->
+              <circle cx="90" cy="32" r="7" fill="#FDE68A"/>
+              <circle cx="102" cy="28" r="8" fill="#FEF3C7"/>
+              <circle cx="114" cy="31" r="7" fill="#FDE68A"/>
+              <circle cx="96" cy="22" r="6" fill="#FEF3C7"/>
+              <circle cx="108" cy="20" r="7" fill="#FDE68A"/>
+              <circle cx="85" cy="25" r="5" fill="#FEF3C7"/>
+              <circle cx="118" cy="24" r="5" fill="#FDE68A"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="program-beat beat-left" id="beat-cake">
+          <div class="beat-illustration">
+            <!-- Cake SVG -->
+            <svg viewBox="0 0 120 120" width="80" height="80" aria-hidden="true">
+              <!-- Cake base -->
+              <rect x="20" y="60" width="80" height="35" rx="6" fill="#F9A8D4"/>
+              <rect x="20" y="60" width="80" height="8" rx="4" fill="#FBCFE8"/>
+              <!-- Frosting drips -->
+              <path d="M20 65 Q30 72 25 60" fill="#FBCFE8"/>
+              <path d="M50 65 Q55 75 45 60" fill="#FBCFE8"/>
+              <path d="M80 65 Q85 73 75 60" fill="#FBCFE8"/>
+              <!-- Bottom tier -->
+              <rect x="15" y="80" width="90" height="25" rx="6" fill="#C4B5FD"/>
+              <rect x="15" y="80" width="90" height="7" rx="4" fill="#DDD6FE"/>
+              <!-- Plate -->
+              <ellipse cx="60" cy="105" rx="55" ry="8" fill="#E2E8F0" opacity="0.5"/>
+              <!-- Candles -->
+              <rect x="35" y="38" width="4" height="24" rx="2" fill="#FBBF24"/>
+              <rect x="50" y="33" width="4" height="29" rx="2" fill="#F9A8D4"/>
+              <rect x="65" y="36" width="4" height="26" rx="2" fill="#7C3AED"/>
+              <rect x="80" y="38" width="4" height="24" rx="2" fill="#FBBF24"/>
+              <!-- Flames -->
+              <ellipse cx="37" cy="34" rx="4" ry="7" fill="#FB923C"/>
+              <ellipse cx="37" cy="33" rx="2.5" ry="4.5" fill="#FDE68A"/>
+              <ellipse cx="52" cy="29" rx="4" ry="7" fill="#FB923C"/>
+              <ellipse cx="52" cy="28" rx="2.5" ry="4.5" fill="#FDE68A"/>
+              <ellipse cx="67" cy="32" rx="4" ry="7" fill="#FB923C"/>
+              <ellipse cx="67" cy="31" rx="2.5" ry="4.5" fill="#FDE68A"/>
+              <ellipse cx="82" cy="34" rx="4" ry="7" fill="#FB923C"/>
+              <ellipse cx="82" cy="33" rx="2.5" ry="4.5" fill="#FDE68A"/>
+              <!-- Number 8 -->
+              <text x="60" y="76" text-anchor="middle" fill="white" font-size="16" font-family="Fredoka, sans-serif" font-weight="700">8</text>
+            </svg>
+          </div>
+          <div class="beat-content">
+            <p class="beat-text" id="beat-cake-text"></p>
+          </div>
+        </div>
+
+        <p class="extra-info" id="gifts-line"></p>
+        <p class="extra-info" id="contact-line"></p>
+      </div>
+    </section>
+
+    <!-- OSA -->
+    <section class="act act-rsvp" id="act-rsvp">
+      <div class="act-inner">
+        <h2 class="act-title rsvp-title">OSA</h2>
+        <p class="rsvp-deadline" id="rsvp-deadline"></p>
+
+        <!-- Summary state (shown after submission) -->
+        <div class="rsvp-summary" id="rsvp-summary" hidden>
+          <p id="summary-text"></p>
+          <button class="btn btn-change" id="btn-change">Ändra svar</button>
+        </div>
+
+        <!-- Form -->
+        <form class="rsvp-form" id="rsvp-form" novalidate>
+          <input type="hidden" name="_subject" id="form-subject" />
+          <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off" />
+          <input type="hidden" name="changed" id="form-changed" value="" />
+
+          <div class="form-group">
+            <label for="field-name">Barnets namn</label>
+            <input type="text" id="field-name" name="name" required autocomplete="given-name" />
+            <span class="form-error" id="error-name"></span>
+          </div>
+
+          <div class="form-group">
+            <label>Kommer du?</label>
+            <div class="toggle-buttons" id="toggle-attending">
+              <button type="button" class="btn-toggle" data-value="ja" id="btn-yes">Ja, jag kommer!</button>
+              <button type="button" class="btn-toggle" data-value="nej" id="btn-no">Nej, tyvärr</button>
+            </div>
+            <input type="hidden" name="attending" id="field-attending" required />
+            <span class="form-error" id="error-attending"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="field-diet">Allergier eller kostönskemål</label>
+            <textarea id="field-diet" name="diet" rows="2" placeholder="T.ex. nötter, laktos, vegetariskt"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="field-phone">Förälders telefon</label>
+            <input type="tel" id="field-phone" name="phone" autocomplete="tel" />
+          </div>
+
+          <div class="form-group">
+            <label for="field-message">Hälsning eller fråga</label>
+            <textarea id="field-message" name="message" rows="2"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-submit" id="btn-submit">
+            <span id="submit-text">Skicka svar</span>
+            <span class="spinner" id="spinner" hidden></span>
+          </button>
+
+          <p class="form-status" id="form-status"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- EFTERTEXTER -->
+    <section class="act act-outro" id="act-outro">
+      <div class="act-inner credits">
+        <p class="credits-line">Tack för att du kom hit.</p>
+        <p class="credits-line credits-big" id="outro-see-you"></p>
+        <div class="outro-controls">
+          <button class="btn-mute" id="btn-mute" aria-label="Ljud av/på">
+            <svg id="icon-sound-on" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+              <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+            </svg>
+            <svg id="icon-sound-off" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" hidden>
+              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+              <line x1="23" y1="9" x2="17" y2="15"/>
+              <line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+          </button>
+          <a href="#intro" class="btn-top">Tillbaka upp</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
