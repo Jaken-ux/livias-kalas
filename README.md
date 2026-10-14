@@ -17,7 +17,7 @@ All information (datum, tid, adress, program) finns i **`src/content.ts`**. Änd
 
 ## Personlig länk
 
-Lägg till `?g=Namn` i URL:en för att visa "Hej Namn!" på sidan:
+Lägg till `?g=Namn` i URL:en, så står det "…och Namn är bjuden på" i introt (i stället för "du"), och namnet förifylls i OSA-formulärets fält "Barnets namn" (går att ändra):
 
 ```
 https://<user>.github.io/livias-kalas/?g=Emma

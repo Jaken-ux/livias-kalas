@@ -20,9 +20,13 @@ function initGreeting() {
   const params = new URLSearchParams(window.location.search);
   const g = params.get("g");
   if (g) {
-    const safe = g.slice(0, 30).replace(/[<>&"'/]/g, "");
-    const el = $("#greeting");
-    if (el) el.textContent = `Hej ${safe}!`;
+    const safe = g.slice(0, 30).replace(/[<>&"'/]/g, "").trim();
+    if (!safe) return;
+    // "...och Emma är bjuden på" – och barnets namn förifylls i OSA
+    const el = $("#invitee");
+    if (el) el.textContent = safe;
+    const nameField = $<HTMLInputElement>("#field-name");
+    if (nameField) nameField.value = safe;
   }
 }
 
@@ -102,7 +106,7 @@ function populateContent() {
       countdownEl.textContent = "Kalaset är idag!";
     } else {
       countdownEl.textContent =
-        "Kalaset har varit – tack för att du kom!";
+        "Kalaset har varit – tack för att ni kom!";
     }
   }
 
@@ -517,7 +521,7 @@ function initRSVP() {
   function showSummary(data: StoredRSVP) {
     const attendingText =
       data.attending === "ja" ? "ja" : "nej";
-    let text = `Du har svarat ${attendingText} för ${data.name}`;
+    let text = `Ni har svarat ${attendingText} för ${data.name}`;
     if (data.diet) text += ` \u00b7 ${data.diet}`;
     summaryText.textContent = text;
     summary.hidden = false;
@@ -568,7 +572,7 @@ function initRSVP() {
     }
 
     if (!fieldAttending.value) {
-      errorAttending.textContent = "Välj om du kommer eller inte";
+      errorAttending.textContent = "Välj om ni kommer eller inte";
       valid = false;
     } else {
       errorAttending.textContent = "";

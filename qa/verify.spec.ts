@@ -146,21 +146,31 @@ test.describe("Definition of Done", () => {
     expect(appleHref).toContain(q);
   });
 
-  test("greeting with ?g=Emma shows 'Hej Emma!'", async ({ page }) => {
+  test("?g=Emma: 'Emma är bjuden på' and name prefilled in OSA", async ({ page }) => {
     await page.goto("/?g=Emma");
     await page.waitForLoadState("networkidle");
-    const greeting = await page.locator("#greeting").textContent();
-    expect(greeting).toBe("Hej Emma!");
+    await expect(page.locator(".subtitle")).toContainText("och Emma är bjuden på");
+    await expect(page.locator(".title")).not.toContainText("Hej");
+    await expect(page.locator("#field-name")).toHaveValue("Emma");
+    // Förifyllt namn ska gå att ändra
+    await page.locator("#field-name").fill("Emma S");
+    await expect(page.locator("#field-name")).toHaveValue("Emma S");
+  });
+
+  test("without ?g: 'du är bjuden på' and empty name field", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator(".subtitle")).toContainText("och du är bjuden på");
+    await expect(page.locator("#field-name")).toHaveValue("");
   });
 
   test("greeting with ?g=<script> renders as text", async ({ page }) => {
     await page.goto("/?g=<script>alert(1)</script>");
     await page.waitForLoadState("networkidle");
-    const greeting = await page.locator("#greeting").textContent();
-    expect(greeting).toContain("Hej");
     // Should not contain HTML tags
-    const html = await page.locator("#greeting").innerHTML();
-    expect(html).not.toContain("<script>");
+    const html = await page.locator("#invitee").innerHTML();
+    expect(html).not.toContain("<");
+    expect(await page.locator("#field-name").inputValue()).not.toContain("<");
   });
 
   test("form validation: empty name shows error", async ({ page }) => {
