@@ -1,5 +1,6 @@
 node_modules/
 dist/
-qa/
+qa/*
+!qa/verify.spec.ts
 test-results/
 CC-PROMPT.md
