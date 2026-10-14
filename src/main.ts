@@ -31,6 +31,7 @@ function createStars() {
   const container = $("#stars");
   if (!container) return;
   const count = 60;
+  const tweens: gsap.core.Tween[] = [];
   for (let i = 0; i < count; i++) {
     const star = document.createElement("div");
     star.className = "star";
@@ -42,17 +43,30 @@ function createStars() {
     container.appendChild(star);
 
     if (!reducedMotion) {
-      gsap.to(star, {
-        opacity: 0.3 + Math.random() * 0.7,
-        duration: 1 + Math.random() * 2,
-        delay: Math.random() * 3,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
+      tweens.push(
+        gsap.to(star, {
+          opacity: 0.3 + Math.random() * 0.7,
+          duration: 1 + Math.random() * 2,
+          delay: Math.random() * 3,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+        })
+      );
     } else {
       star.style.opacity = `${0.3 + Math.random() * 0.5}`;
     }
+  }
+
+  // Pausa glittret när introt är utom synhåll – sparar CPU under scroll
+  if (tweens.length) {
+    ScrollTrigger.create({
+      trigger: "#intro",
+      start: "top bottom",
+      end: "bottom top",
+      onToggle: (self) =>
+        tweens.forEach((t) => (self.isActive ? t.resume() : t.pause())),
+    });
   }
 }
 
