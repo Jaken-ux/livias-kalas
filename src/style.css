@@ -44,17 +44,8 @@ img {
 }
 
 /* ===== TYPOGRAPHY ===== */
-h1, h2, h3, .act-label, .act-title {
+h1, h2, h3, .act-title {
   font-family: var(--font-display);
-}
-
-.act-label {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--yellow);
-  margin-bottom: 0.5rem;
-  opacity: 0.8;
 }
 
 .act-title {
