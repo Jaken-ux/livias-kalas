@@ -42,7 +42,7 @@ https://<user>.github.io/livias-kalas/?g=Emma
 
 ## Ljud
 
-Originalfilerna ligger i `assets/sound/`. De klipps och normaliseras till `public/sounds/` (max 1 s, fanfaren max 3 s, mono, 96 kbps) med:
+Originalfilerna ligger lokalt i `assets/sound/`. Mappen är gitignorerad och finns inte i repot, bara de bearbetade filerna gör det. Originalen klipps och normaliseras till `public/sounds/` (max 1 s, fanfaren max 3 s, mono, 96 kbps) med:
 
 ```bash
 bash scripts/process-sounds.sh   # kräver ffmpeg (brew install ffmpeg)

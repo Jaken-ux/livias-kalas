@@ -707,6 +707,11 @@ test.describe("Sound files", () => {
     await page.locator("#btn-hero").tap();
     await expect.poll(() => playedSince(n)).toEqual([{ name: "sparkle", rate: 0.6 }]);
 
+    // Tryck 3: mössan flyger iväg = samma ljud igen
+    n = (await played()).length;
+    await page.locator("#btn-hero").tap();
+    await expect.poll(() => playedSince(n)).toEqual([{ name: "sparkle", rate: 0.6 }]);
+
     // Pizza = bite
     await page.locator("#beat-pizza").scrollIntoViewIfNeeded();
     n = (await played()).length;

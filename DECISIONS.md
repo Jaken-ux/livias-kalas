@@ -1,5 +1,8 @@
 # Decisions Log — Livias Kalas
 
+## 2026-10-15 — Ljudoriginalen ur repot; nattmössans ljud på tryck 2 och 3
+`assets/sound/` är gitignorerad och originalen är borttagna ur repot (de finns kvar lokalt). Bara `public/sounds/` publiceras. Obs: originalen finns kvar i git-historiken (commit 402e0ac). Att rensa dem kräver omskriven historik och force-push, och det är inte gjort. Nattmössans ljud (sparkle 0.6) spelas nu både när mössan dalar ner och när den flyger iväg. Ersätter tolkningen i föregående post. Commit: "Remove sound originals".
+
 ## 2026-10-15 — Riktiga ljudeffekter i stället för syntes
 Alla syntetiserade ljud är ersatta av filer i `public/sounds/`, framtagna med `scripts/process-sounds.sh` ur `assets/sound/` (mappen heter `sound`, inte `sounds`). Filerna förladdas vid första trycket och spelas via Web Audio. Ett ljud som efterfrågas innan laddningen är klar spelas om det hinner inom 0,5 s. Pop är 200–300 ms ur popcorn.mp3. Förkastat: de första 150 ms enligt ursprunglig instruktion, som är brus (max −28,8 dB). Jacob valde alternativet efter att ha lyssnat. Nattmössan använder sparkle med playbackRate 0.6 eftersom swoosh.mp3 saknas, och ljudet spelas när mössan dalar ner (tryck 2), inte när den flyger iväg. Topparna är normaliserade till −1 dBFS och huvudvolymen är 0,6. Commit: "Real sound effects".
 

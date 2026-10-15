@@ -730,7 +730,7 @@ function playGlitter() {
   playSound("sparkle");
 }
 
-// Nattmössan: sparkle nedpitchad (swoosh.mp3 saknas)
+// Nattmössan (dalar ner och flyger iväg): sparkle nedpitchad (swoosh.mp3 saknas)
 function playSwoosh() {
   playSound("sparkle", { rate: 0.6 });
 }
@@ -821,6 +821,7 @@ function initHero() {
       swing = gsap.fromTo(tofs, { rotation: -12 }, { rotation: 12, duration: 1.4, ease: "sine.inOut", repeat: -1, yoyo: true });
     } else {
       // Mössan flyger iväg uppåt ur bild
+      playSwoosh();
       stopSwing();
       gsap.set(tiara, { autoAlpha: 0 });
       if (reducedMotion) {
