@@ -317,7 +317,32 @@ function initSignpost() {
   const signArm = document.getElementById("sign-arm");
   let isOpen = false;
 
+  // Liten vagga på plattan var 4:e sekund tills skylten trycks första gången.
+  // Körs bara när sektionen syns.
+  let wobble: gsap.core.Timeline | null = null;
+  if (signArm && !reducedMotion) {
+    wobble = gsap
+      .timeline({ paused: true, repeat: -1, repeatDelay: 3.4, delay: 1 })
+      .to(signArm, { rotation: 2, duration: 0.15, ease: "sine.inOut" })
+      .to(signArm, { rotation: -2, duration: 0.3, ease: "sine.inOut" })
+      .to(signArm, { rotation: 0, duration: 0.15, ease: "sine.inOut" });
+    ScrollTrigger.create({
+      trigger: "#act-where",
+      start: "top bottom",
+      end: "bottom top",
+      onToggle: (self) => {
+        if (!wobble) return;
+        if (self.isActive) wobble.resume();
+        else wobble.pause();
+      },
+    });
+  }
+
   const toggle = () => {
+    if (wobble) {
+      wobble.kill();
+      wobble = null;
+    }
     isOpen = !isOpen;
     card.classList.toggle("open", isOpen);
 
