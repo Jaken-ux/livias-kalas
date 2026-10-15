@@ -118,7 +118,13 @@ h1, h2, h3, .act-title {
   gap: 1.2rem;
 }
 
+.hero-btn {
+  position: relative;
+  border-radius: 50%;
+}
+
 .hero-frame {
+  display: block;
   width: 200px;
   height: 200px;
   border-radius: 50%;
@@ -132,6 +138,43 @@ h1, h2, h3, .act-title {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Tiara och nattmössa: samma box som ramen, placering i % av ramen
+   (kalibrerat mot fotot: hjässan ~17 % från ramens överkant, x ~50 %) */
+.hero-accessories {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.accessory {
+  position: absolute;
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.tiara {
+  left: 30%;
+  top: 3%;
+  width: 40%;
+  height: auto;
+}
+
+.nightcap {
+  left: 20%;
+  top: -27%;
+  width: 62%;
+  height: auto;
+}
+
+.hero-spark {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  will-change: transform, opacity;
 }
 
 .title {

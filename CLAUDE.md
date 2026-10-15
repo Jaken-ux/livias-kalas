@@ -3,6 +3,7 @@
 Läsordning för en ny session: README.md → DECISIONS.md (beslutslogg, nyast överst) → Kända fällor nedan.
 
 - En push till `main` deployar direkt till https://jaken-ux.github.io/livias-kalas/ via `.github/workflows/deploy.yml`.
+- **Commit och push:** slutar en instruktion med "commita X och pusha" är det Jacobs godkännande, och det gäller även inklistrade instruktioner. Fråga inte igen: committa med det angivna meddelandet och pusha när ändringen är verifierad. Går en verifiering fel (tester, bygge, avvikelse) gäller fortfarande stopp och fråga.
 - I `qa/` spåras bara testsviten `qa/verify.spec.ts`. Rapport, skärmdumpar och Lighthouse-data är gitignorerade och finns bara lokalt. Kör sviten med `npx playwright test`.
 
 ## Kända fällor

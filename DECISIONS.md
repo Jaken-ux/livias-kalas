@@ -1,5 +1,8 @@
 # Decisions Log — Livias Kalas
 
+## 2026-10-15 — Hero-tryck: tiara och nattmössa
+Porträttet är en knapp (`#btn-hero`) som växlar mellan tre tillstånd: ingenting, tiara och nattmössa. Accessoarerna ligger i ett eget lager (`.hero-accessories`) bredvid `.hero-frame`, som har `overflow: hidden` och annars skulle klippa dem. Placeringen anges i % av ramen och är kalibrerad visuellt mot skärmdumpar vid 320/390/430 px. Hjässan sitter på ~17 % av ramen, inte på de ~11 % som räknats fram ur bildens beskärning. Ramen har fast storlek, så placeringen beror inte på skärmbredden. Förkastat: lägga accessoarerna inuti ramen (klipps). Ljud bara vid tiaran, enligt uppdraget. Commit: "Add hero tap: tiara and nightcap".
+
 ## 2026-10-15 — Tryckinteraktioner i Vad händer (pizza, tårta, popcorn)
 Pizzans tuggor görs med en SVG-mask (`#bite-mask`) och inte en overlay i bakgrundsfärg, så de fungerar mot alla bakgrunder. Popcornets tryckyta är hela illustrationen med kuddar och hink, men bara hinken skakar. Förkastat: bara hinken, ~40×55 px, för liten för ett barn. Vid reduced motion visas bara slutlägen, men ljudet är kvar och styrs av ljudknappen. Popcornen visas då still och tonas ut efter 1,5 s. Förkastat: inget ljud alls, och inga popcorn alls. Bundle +~7 kB okomprimerat (+2,5 kB gzip). Ingen jank vid regn och scroll med CPU 4x: 0 frames >33 ms, 0 layout shifts. Commit: "Add tap interactions: pizza, cake, popcorn".
 

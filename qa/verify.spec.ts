@@ -559,3 +559,63 @@ test.describe("Tap interactions (Vad händer)", () => {
     expect(errors).toEqual([]);
   });
 });
+
+test.describe("Hero tap (tiara och nattmössa)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  const vis = (page: import("@playwright/test").Page, sel: string) =>
+    page.$eval(sel, (e) => {
+      const c = getComputedStyle(e);
+      return c.visibility === "visible" && c.opacity === "1";
+    });
+
+  test("three taps cycle tiara → nightcap → nothing, no console errors", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    page.on("console", (m) => {
+      if (m.type() === "error") errors.push(m.text());
+    });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(2000); // intro klar
+    const btn = page.locator("#btn-hero");
+    await expect(btn).toHaveAttribute("aria-label", "Tryck på Livia");
+    expect(await vis(page, "#tiara")).toBe(false);
+    expect(await vis(page, "#nightcap")).toBe(false);
+
+    await btn.tap();
+    await expect(btn).toHaveAttribute("data-state", "1");
+    await expect.poll(() => vis(page, "#tiara")).toBe(true);
+    await page.waitForTimeout(1200);
+    await page.locator("#btn-hero").screenshot({ path: path.join(QA_DIR, "screenshot-hero-tiara.png") });
+
+    await btn.tap();
+    await expect(btn).toHaveAttribute("data-state", "2");
+    await expect.poll(() => vis(page, "#nightcap")).toBe(true);
+    await expect.poll(() => vis(page, "#tiara")).toBe(false);
+    await page.waitForTimeout(1200);
+    await page.locator("#btn-hero").screenshot({ path: path.join(QA_DIR, "screenshot-hero-nightcap.png") });
+
+    await btn.tap();
+    await expect(btn).toHaveAttribute("data-state", "0");
+    await expect.poll(() => vis(page, "#nightcap"), { timeout: 3000 }).toBe(false);
+    expect(await vis(page, "#tiara")).toBe(false);
+    await expect(page.locator(".hero-spark")).toHaveCount(0, { timeout: 2000 });
+
+    // Börjar om
+    await btn.tap();
+    await expect(btn).toHaveAttribute("data-state", "1");
+    expect(errors).toEqual([]);
+  });
+
+  test("reduced motion: accessory appears directly without falling", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.locator("#btn-hero").tap();
+    // Står på plats direkt (ingen y-förskjutning), ingen stjärnpop
+    expect(await page.$eval("#tiara", (e) => getComputedStyle(e).transform)).toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
+    await expect(page.locator(".hero-spark")).toHaveCount(0);
+    await expect.poll(() => vis(page, "#tiara")).toBe(true);
+  });
+});

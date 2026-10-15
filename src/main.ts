@@ -717,6 +717,114 @@ function initPopcorn() {
   });
 }
 
+// ===== HERO: TIARA OCH NATTMÖSSA =====
+function playGlitter() {
+  [1568, 2093, 2637, 3136].forEach((f, i) => tone(f, f * 1.02, 0.14, 0.05, i * 0.06));
+}
+
+const SPARK_SVG =
+  '<svg viewBox="0 0 14 14" width="14" height="14"><path d="M7 0l1.8 5.2L14 7l-5.2 1.8L7 14l-1.8-5.2L0 7l5.2-1.8Z" fill="#FDE68A"/></svg>';
+
+// Små stjärnor som poppar runt tiaran (i % av ramen)
+function popSparks(layer: HTMLElement) {
+  const spots = [[24, 2], [74, 0], [16, 16], [82, 14], [50, -10]];
+  spots.forEach(([x, y], i) => {
+    const el = document.createElement("span");
+    el.className = "hero-spark";
+    el.innerHTML = SPARK_SVG;
+    el.style.left = `${x}%`;
+    el.style.top = `${y}%`;
+    layer.appendChild(el);
+    gsap.fromTo(
+      el,
+      { scale: 0, opacity: 1, rotation: 0 },
+      {
+        keyframes: [
+          { scale: 1.2, rotation: 45, duration: 0.25, ease: "back.out(3)" },
+          { scale: 0, opacity: 0, rotation: 90, y: -10, duration: 0.35, ease: "power1.in" },
+        ],
+        delay: i * 0.06,
+        onComplete: () => el.remove(),
+      }
+    );
+  });
+}
+
+function initHero() {
+  const btn = $("#btn-hero");
+  const tiara = document.getElementById("tiara");
+  const cap = document.getElementById("nightcap");
+  const tofs = document.getElementById("tofs");
+  const layer = btn?.querySelector<HTMLElement>(".hero-accessories");
+  if (!btn || !tiara || !cap || !tofs || !layer) return;
+  gsap.set(tiara, { transformOrigin: "50% 100%" });
+  gsap.set(cap, { transformOrigin: "30% 85%" });
+  gsap.set(tofs, { svgOrigin: "112 34" });
+  let state = 0;
+  let swing: gsap.core.Tween | null = null;
+  const CAP_TILT = 10;
+
+  const stopSwing = () => {
+    swing?.kill();
+    swing = null;
+    gsap.set(tofs, { rotation: 0 });
+  };
+
+  btn.addEventListener("click", () => {
+    state = (state + 1) % 3;
+    btn.dataset.state = String(state);
+    gsap.killTweensOf([tiara, cap]);
+
+    if (state === 1) {
+      // Tiaran faller ner, studsar en gång och landar. Mössan nollställs
+      // ifall den avbröts mitt i flygningen av ett snabbt tryck.
+      gsap.set(cap, { autoAlpha: 0, y: 0, x: 0, rotation: 0 });
+      playGlitter();
+      if (reducedMotion) {
+        gsap.set(tiara, { autoAlpha: 1, y: 0, rotation: 0 });
+        return;
+      }
+      gsap
+        .timeline()
+        .fromTo(tiara, { autoAlpha: 1, y: -160, rotation: -12 }, { y: 0, rotation: 0, duration: 0.5, ease: "power2.in" })
+        .to(tiara, { y: -16, rotation: 3, duration: 0.14, ease: "power1.out" })
+        .to(tiara, { y: 0, rotation: 0, duration: 0.14, ease: "power1.in" })
+        .add(() => popSparks(layer))
+        .fromTo(tiara.querySelectorAll(".glint"), { opacity: 0.2 }, { opacity: 1, duration: 0.2, stagger: 0.08, repeat: 1, yoyo: true }, "<");
+    } else if (state === 2) {
+      // Tiaran hoppar upp, nattmössan dalar ner och sätter sig snett
+      if (reducedMotion) {
+        gsap.set(tiara, { autoAlpha: 0 });
+        gsap.set(cap, { autoAlpha: 1, y: 0, x: 0, rotation: CAP_TILT });
+        return;
+      }
+      gsap.to(tiara, { y: -50, autoAlpha: 0, duration: 0.3, ease: "power2.out" });
+      gsap
+        .timeline({ delay: 0.15 })
+        .fromTo(cap, { autoAlpha: 1, y: -140, x: 0, rotation: -8 }, { y: 0, rotation: CAP_TILT + 4, duration: 0.8, ease: "sine.out" })
+        .to(cap, { rotation: CAP_TILT, duration: 0.3, ease: "sine.inOut" });
+      stopSwing();
+      swing = gsap.fromTo(tofs, { rotation: -12 }, { rotation: 12, duration: 1.4, ease: "sine.inOut", repeat: -1, yoyo: true });
+    } else {
+      // Mössan flyger iväg uppåt ur bild
+      stopSwing();
+      gsap.set(tiara, { autoAlpha: 0 });
+      if (reducedMotion) {
+        gsap.set(cap, { autoAlpha: 0 });
+        return;
+      }
+      gsap.to(cap, {
+        y: -window.innerHeight,
+        x: 60,
+        rotation: 50,
+        duration: 0.7,
+        ease: "power2.in",
+        onComplete: () => gsap.set(cap, { autoAlpha: 0, y: 0, x: 0, rotation: 0 }),
+      });
+    }
+  });
+}
+
 // ===== CONFETTI =====
 function fireConfettiBig() {
   if (reducedMotion) {
@@ -942,6 +1050,7 @@ function init() {
   populateContent();
   initAnimations();
   initSignpost();
+  initHero();
   initPizza();
   initCake();
   initPopcorn();

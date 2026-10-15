@@ -1,6 +1,6 @@
 # Livias kalas — inbjudan
 
-Mobilanpassad, ensidig inbjudningssida till Livias 8-årskalas (pyjamas- och filmmyskväll). Byggt med Vite + vanilla TypeScript, GSAP-scrollanimationer och Formspree-formulär. I programdelen kan man trycka på pizzan (tuggor), popcornhinken (popcornregn) och tårtan (blås ut ljusen).
+Mobilanpassad, ensidig inbjudningssida till Livias 8-årskalas (pyjamas- och filmmyskväll). Byggt med Vite + vanilla TypeScript, GSAP-scrollanimationer och Formspree-formulär. Porträttet i introt går att trycka på (tiara → nattmössa → av). I programdelen kan man trycka på pizzan (tuggor), popcornhinken (popcornregn) och tårtan (blås ut ljusen).
 
 ## Köra lokalt
 
@@ -50,6 +50,6 @@ Telefonnumret i `content.party.contact` blir publikt på ett publikt repo och sa
 - **TypeScript** — vanilla, inget UI-ramverk
 - **GSAP + ScrollTrigger** — scroll- och tryckanimationer
 - **canvas-confetti** — konfettiburst vid OSA-ja
-- **Web Audio API** — syntetiserat ljud (pop, fanfar, tugg, blås, popcorn)
+- **Web Audio API** — syntetiserat ljud (pop, fanfar, glitter, tugg, blås, popcorn)
 - **Formspree** — formulärbackend (OSA)
 - **Google Fonts (Fredoka)** — display-typsnitt
