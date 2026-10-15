@@ -653,3 +653,100 @@ test.describe("Hero tap (tiara och nattmössa)", () => {
     await expect.poll(() => vis(page, "#tiara")).toBe(true);
   });
 });
+
+test.describe("Sound files", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("preloaded on first tap, right file per interaction, silent when muted", async ({ page }) => {
+    // Märk varje avkodad buffer med filnamnet och logga varje uppspelning
+    await page.addInitScript(() => {
+      const w = window as any;
+      w.__played = [];
+      const urlOf = new WeakMap<ArrayBuffer, string>();
+      const nameOf = new WeakMap<AudioBuffer, string>();
+      const origAB = Response.prototype.arrayBuffer;
+      Response.prototype.arrayBuffer = async function () {
+        const ab = await origAB.call(this);
+        const m = this.url.match(/sounds\/(\w+)\.mp3/);
+        if (m) urlOf.set(ab, m[1]);
+        return ab;
+      };
+      const origDecode = BaseAudioContext.prototype.decodeAudioData;
+      BaseAudioContext.prototype.decodeAudioData = async function (ab: ArrayBuffer) {
+        const name = urlOf.get(ab);
+        const buf = await origDecode.call(this, ab);
+        if (name) nameOf.set(buf, name);
+        return buf;
+      } as any;
+      const origStart = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function (...a: any[]) {
+        const name = this.buffer && nameOf.get(this.buffer);
+        if (name) w.__played.push({ name, rate: +this.playbackRate.value.toFixed(2) });
+        return origStart.apply(this, a as any);
+      };
+    });
+    const soundRequests: { url: string; status: number }[] = [];
+    page.on("response", (r) => {
+      if (r.url().includes("/sounds/")) soundRequests.push({ url: r.url(), status: r.status() });
+    });
+    const played = () => page.evaluate(() => (window as any).__played as { name: string; rate: number }[]);
+    const playedSince = async (n: number) => (await played()).slice(n);
+
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    expect(soundRequests).toEqual([]); // inget laddas vid sidladdning
+
+    // Tryck 1 på porträttet: förladdning + sparkle
+    await page.locator("#btn-hero").tap();
+    await expect.poll(() => soundRequests.length).toBe(6);
+    expect(soundRequests.every((r) => r.status === 200)).toBe(true);
+    await expect.poll(async () => (await played()).map((p) => p.name)).toContain("sparkle");
+
+    // Tryck 2: nattmössan = sparkle nedpitchad 0.6
+    let n = (await played()).length;
+    await page.locator("#btn-hero").tap();
+    await expect.poll(() => playedSince(n)).toEqual([{ name: "sparkle", rate: 0.6 }]);
+
+    // Pizza = bite
+    await page.locator("#beat-pizza").scrollIntoViewIfNeeded();
+    n = (await played()).length;
+    await page.locator("#btn-pizza").tap();
+    await expect.poll(async () => (await playedSince(n)).map((p) => p.name)).toEqual(["bite"]);
+
+    // Popcorn = popcorn (skak) + 7 pop med slumpad tonhöjd
+    n = (await played()).length;
+    await page.locator("#btn-popcorn").tap();
+    await page.waitForTimeout(1200);
+    const pc = await playedSince(n);
+    expect(pc.filter((p) => p.name === "popcorn")).toHaveLength(1);
+    const pops = pc.filter((p) => p.name === "pop");
+    expect(pops).toHaveLength(7);
+    expect(new Set(pops.map((p) => p.rate)).size).toBeGreaterThan(1);
+
+    // Tårta = blow
+    n = (await played()).length;
+    await page.locator("#btn-cake").tap();
+    await expect.poll(async () => (await playedSince(n)).map((p) => p.name)).toEqual(["blow"]);
+
+    // Skylten (knapptryck) = pop
+    n = (await played()).length;
+    await page.locator("#signpost-svg").tap();
+    await expect.poll(async () => (await playedSince(n)).map((p) => p.name)).toEqual(["pop"]);
+
+    // OSA ja = fanfare (Formspree mockas i beforeEach)
+    await page.locator("#field-name").fill("Testbarn");
+    await page.locator("#btn-yes").click();
+    n = (await played()).length;
+    await page.locator("#btn-submit").click();
+    await expect.poll(async () => (await playedSince(n)).map((p) => p.name)).toContain("fanfare");
+
+    // Ljud av: inga uppspelningar
+    await page.locator("#btn-mute").scrollIntoViewIfNeeded();
+    await page.locator("#btn-mute").click();
+    n = (await played()).length;
+    await page.locator("#btn-hero").tap();
+    await page.locator("#btn-pizza").tap();
+    await page.waitForTimeout(500);
+    expect(await playedSince(n)).toEqual([]);
+  });
+});

@@ -392,6 +392,7 @@ function getAudioCtx(): AudioContext {
 function initAudioUnlock() {
   const unlock = () => {
     if (audioCtx?.state === "running") return;
+    preloadSounds();
     try {
       const ctx = getAudioCtx();
       // Tyst buffer: äldre iOS låser upp ljudet först när något faktiskt spelas
@@ -408,50 +409,64 @@ function initAudioUnlock() {
   }
 }
 
-function playPop() {
+// Ljudfiler i public/sounds/ (genererade med scripts/process-sounds.sh).
+// Förladdas vid första trycket och spelas via Web Audio så att de kan överlappa.
+type SoundName = "bite" | "sparkle" | "blow" | "pop" | "popcorn" | "fanfare";
+const SOUND_NAMES: SoundName[] = ["bite", "sparkle", "blow", "pop", "popcorn", "fanfare"];
+const MASTER_VOLUME = 0.6;
+const soundBuffers: Partial<Record<SoundName, AudioBuffer>> = {};
+let soundsLoading: Promise<unknown> | null = null;
+
+function preloadSounds() {
+  if (soundsLoading) return;
+  const ctx = getAudioCtx();
+  soundsLoading = Promise.all(
+    SOUND_NAMES.map(async (name) => {
+      try {
+        const res = await fetch(`${import.meta.env.BASE_URL}sounds/${name}.mp3`);
+        soundBuffers[name] = await ctx.decodeAudioData(await res.arrayBuffer());
+      } catch {
+        // Ett ljud som inte laddar ska aldrig stoppa sidan
+      }
+    })
+  );
+}
+
+function playSound(name: SoundName, { rate = 1, volume = 1, at = 0 } = {}) {
   if (isMuted) return;
+  const buf = soundBuffers[name];
+  if (!buf) {
+    // Första trycket: filerna laddas just nu. Spela när de är klara om det
+    // fortfarande känns som svar på trycket (< 0,5 s), annars hoppa över.
+    const t = performance.now();
+    preloadSounds();
+    soundsLoading?.then(() => {
+      if (soundBuffers[name] && performance.now() - t < 500) playSound(name, { rate, volume, at });
+    });
+    return;
+  }
   try {
     const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
     const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(600, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-    osc.connect(gain);
+    gain.gain.value = volume * MASTER_VOLUME;
+    src.connect(gain);
     gain.connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.15);
+    src.start(ctx.currentTime + at);
   } catch {
     // Ignore audio errors
   }
 }
 
+// Knapptryck: ett pop med slumpad tonhöjd/volym
+function playPop() {
+  playSound("pop", { rate: 0.85 + Math.random() * 0.4, volume: 0.7 + Math.random() * 0.3 });
+}
+
 function playFanfare() {
-  if (isMuted) return;
-  try {
-    const ctx = getAudioCtx();
-    const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15);
-      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.15);
-      gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + i * 0.15 + 0.05);
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        ctx.currentTime + i * 0.15 + 0.4
-      );
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + i * 0.15);
-      osc.stop(ctx.currentTime + i * 0.15 + 0.45);
-    });
-  } catch {
-    // Ignore audio errors
-  }
+  playSound("fanfare");
 }
 
 function initMuteToggle() {
@@ -476,63 +491,27 @@ function initMuteToggle() {
   });
 }
 
-function tone(f0: number, f1: number, dur: number, vol = 0.12, at = 0) {
-  if (isMuted) return;
-  try {
-    const ctx = getAudioCtx();
-    const t = ctx.currentTime + at;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.setValueAtTime(f0, t);
-    osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
-    gain.gain.setValueAtTime(vol, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + dur + 0.04);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + dur + 0.05);
-  } catch {
-    // Ignore audio errors
-  }
-}
-
-// "Mm-ums": två korta, mörka pop
 function playMunch() {
-  tone(320, 140, 0.09, 0.15);
-  tone(260, 120, 0.1, 0.12, 0.11);
+  playSound("bite");
 }
 
-// "Fff": kort brus genom högpassfilter
 function playBlow() {
-  if (isMuted) return;
-  try {
-    const ctx = getAudioCtx();
-    const len = Math.floor(ctx.sampleRate * 0.4);
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const filter = ctx.createBiquadFilter();
-    filter.type = "highpass";
-    filter.frequency.value = 1500;
-    const gain = ctx.createGain();
-    const t = ctx.currentTime;
-    gain.gain.setValueAtTime(0.001, t);
-    gain.gain.exponentialRampToValueAtTime(0.25, t + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-    src.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    src.start(t);
-  } catch {
-    // Ignore audio errors
-  }
+  playSound("blow");
 }
 
+// Popcornhinkens skak
+function playPopcornShake() {
+  playSound("popcorn", { volume: 0.8 });
+}
+
+// Kaskad av pop med slumpad tonhöjd, volym och tid
 function playPopcornCascade() {
   for (let i = 0; i < 7; i++) {
-    tone(500 + Math.random() * 500, 200, 0.06, 0.1, i * 0.09 + Math.random() * 0.05);
+    playSound("pop", {
+      rate: 0.8 + Math.random() * 0.6,
+      volume: 0.5 + Math.random() * 0.5,
+      at: i * 0.09 + Math.random() * 0.05,
+    });
   }
 }
 
@@ -693,6 +672,7 @@ function initPopcorn() {
 
   btn.addEventListener("click", () => {
     shake();
+    playPopcornShake();
     // Max ett regn åt gången – under pågående regn blir det bara en extra skak
     if (raining) return;
     raining = true;
@@ -747,7 +727,12 @@ function initPopcorn() {
 
 // ===== HERO: TIARA OCH NATTMÖSSA =====
 function playGlitter() {
-  [1568, 2093, 2637, 3136].forEach((f, i) => tone(f, f * 1.02, 0.14, 0.05, i * 0.06));
+  playSound("sparkle");
+}
+
+// Nattmössan: sparkle nedpitchad (swoosh.mp3 saknas)
+function playSwoosh() {
+  playSound("sparkle", { rate: 0.6 });
 }
 
 const SPARK_SVG =
@@ -821,6 +806,7 @@ function initHero() {
         .fromTo(tiara.querySelectorAll(".glint"), { opacity: 0.2 }, { opacity: 1, duration: 0.2, stagger: 0.08, repeat: 1, yoyo: true }, "<");
     } else if (state === 2) {
       // Tiaran hoppar upp, nattmössan dalar ner och sätter sig snett
+      playSwoosh();
       if (reducedMotion) {
         gsap.set(tiara, { autoAlpha: 0 });
         gsap.set(cap, { autoAlpha: 1, y: 0, x: 0, rotation: CAP_TILT });

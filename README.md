@@ -40,6 +40,16 @@ https://<user>.github.io/livias-kalas/?g=Emma
    https://<ditt-användarnamn>.github.io/livias-kalas/
    ```
 
+## Ljud
+
+Originalfilerna ligger i `assets/sound/`. De klipps och normaliseras till `public/sounds/` (max 1 s, fanfaren max 3 s, mono, 96 kbps) med:
+
+```bash
+bash scripts/process-sounds.sh   # kräver ffmpeg (brew install ffmpeg)
+```
+
+Start och längd per ljud står i skriptet. Kör om skriptet om en originalfil byts ut.
+
 ## Viktigt om integritet
 
 Telefonnumret i `content.party.contact` blir publikt på ett publikt repo och sajt. Sätt fältet till `null` för att dölja det.
@@ -50,6 +60,6 @@ Telefonnumret i `content.party.contact` blir publikt på ett publikt repo och sa
 - **TypeScript** — vanilla, inget UI-ramverk
 - **GSAP + ScrollTrigger** — scroll- och tryckanimationer
 - **canvas-confetti** — konfettiburst vid OSA-ja
-- **Web Audio API** — syntetiserat ljud (pop, fanfar, glitter, tugg, blås, popcorn)
+- **Web Audio API** — ljudeffekter från filer i `public/sounds/`, förladdas vid första trycket
 - **Formspree** — formulärbackend (OSA)
 - **Google Fonts (Fredoka)** — display-typsnitt
