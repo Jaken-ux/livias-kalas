@@ -425,3 +425,137 @@ test.describe("Definition of Done", () => {
     });
   });
 });
+
+test.describe("Tap interactions (Vad händer)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  const trackErrors = (page: import("@playwright/test").Page) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    page.on("console", (m) => {
+      if (m.type() === "error") errors.push(m.text());
+    });
+    return errors;
+  };
+
+  const open = async (page: import("@playwright/test").Page, sel: string) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.locator(sel).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(1200); // entrance-animationen klar
+  };
+
+  test("pizza: three bites, then a fresh slice", async ({ page }) => {
+    const errors = trackErrors(page);
+    await open(page, "#beat-pizza");
+    const btn = page.locator("#btn-pizza");
+    const label = page.locator("#pizza-label");
+    await expect(btn).toHaveAttribute("aria-label", /.+/);
+    await expect(label).toHaveText("Ta en tugga!");
+
+    const steps: [number, string][] = [
+      [1, "Mums!"],
+      [3, "En till?"],
+      [6, "Bara kanten kvar…"],
+    ];
+    for (const [paths, text] of steps) {
+      await btn.tap();
+      await expect(page.locator("#bites path")).toHaveCount(paths);
+      await expect(label).toHaveText(text);
+    }
+    await page.waitForTimeout(500);
+    await page.locator("#beat-pizza .beat-illustration").screenshot({
+      path: path.join(QA_DIR, "screenshot-tap-pizza.png"),
+    });
+
+    await btn.tap();
+    await expect(page.locator("#bites path")).toHaveCount(0);
+    await expect(label).toHaveText("Ta en tugga!");
+    expect(errors).toEqual([]);
+  });
+
+  test("cake: blow out candles, then relight", async ({ page }) => {
+    const errors = trackErrors(page);
+    await open(page, "#beat-cake");
+    const btn = page.locator("#btn-cake");
+    const label = page.locator("#cake-label");
+    const flameOpacity = () =>
+      page.$$eval("#btn-cake .flame", (f) => f.map((x) => getComputedStyle(x).opacity));
+
+    await btn.tap();
+    await expect(label).toHaveText("Grattis Livia!");
+    await expect(btn).toHaveAttribute("aria-label", "Tänd ljusen");
+    await expect(page.locator("#cake-svg .smoke")).not.toHaveCount(0);
+    await page.waitForTimeout(600);
+    expect(await flameOpacity()).toEqual(["0", "0", "0", "0"]);
+    await page.locator("#beat-cake .beat-illustration").screenshot({
+      path: path.join(QA_DIR, "screenshot-tap-cake.png"),
+    });
+    // Rökslingorna tas bort när de tonat ut
+    await expect(page.locator("#cake-svg .smoke")).toHaveCount(0, { timeout: 3000 });
+
+    await btn.tap();
+    await expect(label).toHaveText("");
+    await expect(btn).toHaveAttribute("aria-label", "Blås ut ljusen");
+    await page.waitForTimeout(1000);
+    expect(await flameOpacity()).toEqual(["1", "1", "1", "1"]);
+    expect(errors).toEqual([]);
+  });
+
+  test("popcorn: 25–35 kernels, one rain at a time, cleaned up within 4 s", async ({ page }) => {
+    const errors = trackErrors(page);
+    await open(page, "#beat-movie");
+    const btn = page.locator("#btn-popcorn");
+
+    const t0 = Date.now();
+    await btn.tap();
+    const count = await page.locator(".popcorn").count();
+    expect(count).toBeGreaterThanOrEqual(25);
+    expect(count).toBeLessThanOrEqual(35);
+
+    // Nytt tryck under pågående regn: bara en extra skak, inget nytt regn
+    await btn.tap();
+    await expect(page.locator(".popcorn-layer")).toHaveCount(1);
+    expect(await page.locator(".popcorn").count()).toBeLessThanOrEqual(count);
+
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(QA_DIR, "screenshot-tap-popcorn.png") });
+
+    await expect(page.locator(".popcorn-layer")).toHaveCount(0, { timeout: 4000 });
+    await expect(page.locator(".popcorn")).toHaveCount(0);
+    expect(Date.now() - t0).toBeLessThan(4000);
+    expect(errors).toEqual([]);
+  });
+
+  test("reduced motion: end states only, popcorn still cleaned up", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const errors = trackErrors(page);
+    await open(page, "#beat-pizza");
+
+    await page.locator("#btn-pizza").tap();
+    await expect(page.locator("#bites path")).toHaveCount(1);
+    // Ingen knyck: biten står still (identitetsmatris)
+    expect(await page.$eval("#pizza-slice", (e) => e.getAttribute("transform") ?? "matrix(1,0,0,1,0,0)")).toBe(
+      "matrix(1,0,0,1,0,0)"
+    );
+
+    await page.locator("#btn-cake").tap();
+    // Lågorna släcks direkt (scale 0), utan rök. Opaciteten tonar på 0,2 s via
+    // sidans globala reduced-motion-transition, därav poll.
+    expect(
+      await page.$$eval("#btn-cake .flame", (f) => f.map((x) => x.getAttribute("transform")?.startsWith("matrix(0,0,0,0")))
+    ).toEqual([true, true, true, true]);
+    await expect
+      .poll(() => page.$$eval("#btn-cake .flame", (f) => f.map((x) => getComputedStyle(x).opacity)))
+      .toEqual(["0", "0", "0", "0"]);
+    await expect(page.locator("#cake-svg .smoke")).toHaveCount(0);
+
+    const t0 = Date.now();
+    await page.locator("#btn-popcorn").tap();
+    const count = await page.locator(".popcorn").count();
+    expect(count).toBeGreaterThanOrEqual(25);
+    await expect(page.locator(".popcorn-layer")).toHaveCount(0, { timeout: 4000 });
+    expect(Date.now() - t0).toBeLessThan(4000);
+    expect(errors).toEqual([]);
+  });
+});

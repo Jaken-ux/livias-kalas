@@ -448,6 +448,275 @@ function initMuteToggle() {
   });
 }
 
+function tone(f0: number, f1: number, dur: number, vol = 0.12, at = 0) {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime + at;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur + 0.04);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  } catch {
+    // Ignore audio errors
+  }
+}
+
+// "Mm-ums": två korta, mörka pop
+function playMunch() {
+  tone(320, 140, 0.09, 0.15);
+  tone(260, 120, 0.1, 0.12, 0.11);
+}
+
+// "Fff": kort brus genom högpassfilter
+function playBlow() {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    const len = Math.floor(ctx.sampleRate * 0.4);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "highpass";
+    filter.frequency.value = 1500;
+    const gain = ctx.createGain();
+    const t = ctx.currentTime;
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.25, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(t);
+  } catch {
+    // Ignore audio errors
+  }
+}
+
+function playPopcornCascade() {
+  for (let i = 0; i < 7; i++) {
+    tone(500 + Math.random() * 500, 200, 0.06, 0.1, i * 0.09 + Math.random() * 0.05);
+  }
+}
+
+// ===== TAP INTERACTIONS (Vad händer) =====
+const SVG_NS = "http://www.w3.org/2000/svg";
+const rand = Math.random;
+
+// Tuggor, i viewBox-koordinater (cx, cy, r): spetsen, längre upp, nästan allt
+const BITES: [number, number, number][][] = [
+  [[60, 20, 24]],
+  [[46, 50, 19], [74, 50, 19]],
+  [[36, 74, 22], [84, 74, 22], [60, 70, 25]],
+];
+const PIZZA_LABELS = ["Ta en tugga!", "Mums!", "En till?", "Bara kanten kvar…"];
+
+// Cirkel med lätt taggig kant (tandavtryck)
+function bitePath(cx: number, cy: number, r: number) {
+  const pts: string[] = [];
+  for (let i = 0; i < 28; i++) {
+    const a = (i / 28) * Math.PI * 2;
+    const rr = i % 2 ? r * 0.88 : r;
+    pts.push(`${(cx + Math.cos(a) * rr).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`);
+  }
+  return `M${pts.join("L")}Z`;
+}
+
+function initPizza() {
+  const btn = $("#btn-pizza");
+  const bites = document.getElementById("bites");
+  const slice = document.getElementById("pizza-slice");
+  const label = $("#pizza-label");
+  if (!btn || !bites || !slice) return;
+  gsap.set(slice, { svgOrigin: "60 60" });
+  let n = 0;
+
+  btn.addEventListener("click", () => {
+    if (n < BITES.length) {
+      for (const [cx, cy, r] of BITES[n]) {
+        const p = document.createElementNS(SVG_NS, "path");
+        p.setAttribute("d", bitePath(cx, cy, r));
+        bites.appendChild(p);
+        if (!reducedMotion) {
+          gsap.from(p, { scale: 0, svgOrigin: `${cx} ${cy}`, duration: 0.18, ease: "back.out(2)" });
+        }
+      }
+      n++;
+      if (!reducedMotion) {
+        gsap.fromTo(
+          slice,
+          { rotation: n % 2 ? -8 : 8 },
+          { rotation: 0, duration: 0.4, ease: "elastic.out(1, 0.4)", overwrite: true }
+        );
+      }
+      playMunch();
+    } else {
+      // Fjärde trycket: ny bit
+      bites.replaceChildren();
+      n = 0;
+      if (!reducedMotion) {
+        gsap.fromTo(
+          slice,
+          { scale: 0.5, rotation: 0 },
+          { scale: 1, duration: 0.35, ease: "back.out(2.5)", overwrite: true }
+        );
+      }
+      playPop();
+    }
+    label.textContent = PIZZA_LABELS[n];
+    btn.dataset.bites = String(n);
+  });
+}
+
+function addSmoke(svg: SVGSVGElement, flame: SVGGElement, i: number) {
+  const b = flame.getBBox();
+  const x = b.x + b.width / 2;
+  const y = b.y + b.height * 0.5;
+  const p = document.createElementNS(SVG_NS, "path");
+  p.setAttribute("d", `M${x} ${y}q-3 -4 0 -8q3 -4 0 -8`);
+  p.setAttribute("class", "smoke");
+  p.setAttribute("fill", "none");
+  p.setAttribute("stroke", "#CBD5E1");
+  p.setAttribute("stroke-width", "1.5");
+  p.setAttribute("stroke-linecap", "round");
+  p.setAttribute("opacity", "0");
+  svg.appendChild(p);
+  gsap.fromTo(
+    p,
+    { opacity: 0.8, y: 0 },
+    {
+      opacity: 0,
+      y: -16,
+      x: i % 2 ? 3 : -3,
+      duration: 1.1,
+      delay: 0.15 + i * 0.05,
+      ease: "power1.out",
+      onComplete: () => p.remove(),
+    }
+  );
+}
+
+function initCake() {
+  const btn = $("#btn-cake");
+  const svg = document.getElementById("cake-svg") as SVGSVGElement | null;
+  const label = $("#cake-label");
+  if (!btn || !svg) return;
+  const flames = gsap.utils.toArray<SVGGElement>("#btn-cake .flame");
+  gsap.set(flames, { transformOrigin: "50% 100%" });
+  let lit = true;
+
+  btn.addEventListener("click", () => {
+    lit = !lit;
+    gsap.killTweensOf(flames);
+    if (!lit) {
+      label.textContent = `Grattis ${content.child.name}!`;
+      btn.setAttribute("aria-label", "Tänd ljusen");
+      playBlow();
+      if (reducedMotion) {
+        gsap.set(flames, { scale: 0, opacity: 0 });
+      } else {
+        gsap.to(flames, { scale: 0, opacity: 0, duration: 0.3, stagger: 0.04, ease: "power2.in" });
+        flames.forEach((f, i) => addSmoke(svg, f, i));
+        gsap.fromTo(label, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" });
+      }
+    } else {
+      label.textContent = "";
+      btn.setAttribute("aria-label", "Blås ut ljusen");
+      if (reducedMotion) {
+        gsap.set(flames, { scale: 1, opacity: 1 });
+      } else {
+        // Flammar upp i tur och ordning
+        gsap.to(flames, { scale: 1, opacity: 1, duration: 0.35, stagger: 0.12, ease: "back.out(3)" });
+      }
+    }
+    btn.dataset.lit = String(lit);
+  });
+}
+
+const POPCORN_SVGS = [
+  '<svg viewBox="0 0 20 20" width="20" height="20"><circle cx="7" cy="9" r="5" fill="#FEF3C7"/><circle cx="13" cy="8" r="5" fill="#FDE68A"/><circle cx="10" cy="13" r="5" fill="#FEF3C7"/></svg>',
+  '<svg viewBox="0 0 20 20" width="20" height="20"><circle cx="6" cy="11" r="4" fill="#FDE68A"/><circle cx="11" cy="6" r="5" fill="#FEF3C7"/><circle cx="14" cy="12" r="4.5" fill="#FEF3C7"/><circle cx="9" cy="14" r="4" fill="#FDE68A"/></svg>',
+  '<svg viewBox="0 0 20 20" width="20" height="20"><circle cx="8" cy="8" r="5.5" fill="#FEF3C7"/><circle cx="13" cy="12" r="5" fill="#FDE68A"/><circle cx="10" cy="11" r="1.6" fill="#F59E0B"/></svg>',
+];
+
+function initPopcorn() {
+  const btn = $("#btn-popcorn");
+  const bucket = document.getElementById("popcorn-bucket");
+  if (!btn) return;
+  let raining = false;
+
+  const shake = () => {
+    if (reducedMotion || !bucket) return;
+    gsap.fromTo(
+      bucket,
+      { rotation: 0 },
+      { keyframes: { rotation: [-8, 7, -5, 3, 0] }, duration: 0.45, svgOrigin: "102 95", overwrite: true }
+    );
+  };
+
+  btn.addEventListener("click", () => {
+    shake();
+    // Max ett regn åt gången – under pågående regn blir det bara en extra skak
+    if (raining) return;
+    raining = true;
+    btn.dataset.raining = "true";
+    playPopcornCascade();
+
+    const layer = document.createElement("div");
+    layer.className = "popcorn-layer";
+    layer.setAttribute("aria-hidden", "true");
+    const count = 25 + Math.floor(rand() * 11);
+    const items: HTMLElement[] = [];
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement("div");
+      el.className = "popcorn";
+      el.innerHTML = POPCORN_SVGS[i % POPCORN_SVGS.length];
+      layer.appendChild(el);
+      items.push(el);
+    }
+    document.body.appendChild(layer);
+
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const done = () => {
+      layer.remove();
+      raining = false;
+      delete btn.dataset.raining;
+    };
+
+    if (reducedMotion) {
+      // Slutresultat utan rörelse: popcorn ligger utspridda och tonar ut
+      items.forEach((el) =>
+        gsap.set(el, { x: rand() * (w - 20), y: rand() * (h - 20), rotation: rand() * 360, scale: 0.7 + rand() * 0.6 })
+      );
+      gsap.to(items, { opacity: 0, duration: 0.4, delay: 1.5, onComplete: done });
+      return;
+    }
+
+    const all = gsap.timeline({ onComplete: done });
+    items.forEach((el) => {
+      const x = rand() * (w - 20);
+      const mid = h * (0.35 + rand() * 0.3);
+      gsap.set(el, { x, y: -40, rotation: rand() * 360, scale: 0.7 + rand() * 0.6 });
+      const t = gsap
+        .timeline({ onComplete: () => el.remove() })
+        .to(el, { y: mid, x: x + (rand() - 0.5) * 40, rotation: "+=180", duration: 0.5 + rand() * 0.3, ease: "power2.in" })
+        .to(el, { y: mid - 20 - rand() * 20, duration: 0.18, ease: "power1.out" }) // studs
+        .to(el, { y: h + 60, rotation: "+=120", duration: 0.55 + rand() * 0.2, ease: "power2.in" });
+      all.add(t, rand() * 0.6);
+    });
+  });
+}
+
 // ===== CONFETTI =====
 function fireConfettiBig() {
   if (reducedMotion) {
@@ -673,6 +942,9 @@ function init() {
   populateContent();
   initAnimations();
   initSignpost();
+  initPizza();
+  initCake();
+  initPopcorn();
   initMuteToggle();
   initRSVP();
 }

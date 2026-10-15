@@ -324,6 +324,60 @@ h1, h2, h3, .act-title {
   flex-shrink: 0;
 }
 
+/* Tryckbara illustrationer (pizza, popcorn, tårta) */
+.tap-btn {
+  display: block;
+  margin: 0 auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 16px;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* snabba upprepade tryck ska inte zooma */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tap-btn svg {
+  display: block;
+  overflow: visible;
+}
+
+.tap-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.8);
+}
+
+/* Bredden följer illustrationen; två rader reserverade så texten inte flyttar layouten */
+.tap-label {
+  width: 0;
+  min-width: 100%;
+  min-height: 2.5em;
+  margin-top: 0.3rem;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  line-height: 1.25;
+  color: var(--yellow);
+  text-align: center;
+}
+
+.popcorn-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.popcorn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform, opacity;
+}
+
 .beat-content {
   flex: 1;
   text-align: left;
