@@ -1,5 +1,8 @@
 # Decisions Log — Livias Kalas
 
+## 2026-10-15 — Ljudknapp och ljudstart på iOS
+Ljudknappen visar en ikon i taget och växlar etikett mellan "Stäng av ljud" och "Sätt på ljud". Förkastat: att också sätta `aria-pressed`, som tillsammans med en växlande etikett läses motsägelsefullt ("Sätt på ljud, nedtryckt"). AudioContext låses upp på varje tryck (touchend/pointerup/click/keydown) och `resume()` anropas när den inte är `running`. Förkastat: att bara låsa upp på första trycket, eftersom iOS pausar kontexten vid appbyte. Ljudet är på som standard (oförändrat). Commit: "Fix mute toggle and audio init".
+
 ## 2026-10-15 — Hero-tryck: tiara och nattmössa
 Porträttet är en knapp (`#btn-hero`) som växlar mellan tre tillstånd: ingenting, tiara och nattmössa. Accessoarerna ligger i ett eget lager (`.hero-accessories`) bredvid `.hero-frame`, som har `overflow: hidden` och annars skulle klippa dem. Placeringen anges i % av ramen och är kalibrerad visuellt mot skärmdumpar vid 320/390/430 px. Hjässan sitter på ~17 % av ramen, inte på de ~11 % som räknats fram ur bildens beskärning. Ramen har fast storlek, så placeringen beror inte på skärmbredden. Förkastat: lägga accessoarerna inuti ramen (klipps). Ljud bara vid tiaran, enligt uppdraget. Commit: "Add hero tap: tiara and nightcap".
 

@@ -380,7 +380,32 @@ function getAudioCtx(): AudioContext {
   if (!audioCtx) {
     audioCtx = new AudioContext();
   }
+  // iOS pausar kontexten (t.ex. efter appbyte) – väck den igen
+  if (audioCtx.state !== "running") audioCtx.resume().catch(() => {});
   return audioCtx;
+}
+
+// iOS Safari: AudioContext måste skapas/resume():as inom en user gesture,
+// annars förblir den suspended. Lås upp på varje tryck (billigt när den redan
+// kör) så att även ljud som spelas senare – t.ex. fanfaren efter OSA-svaret,
+// som kommer efter ett nätverksanrop – fungerar. Skapas aldrig vid sidladdning.
+function initAudioUnlock() {
+  const unlock = () => {
+    if (audioCtx?.state === "running") return;
+    try {
+      const ctx = getAudioCtx();
+      // Tyst buffer: äldre iOS låser upp ljudet först när något faktiskt spelas
+      const src = ctx.createBufferSource();
+      src.buffer = ctx.createBuffer(1, 1, 22050);
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch {
+      // Ignore audio errors
+    }
+  };
+  for (const type of ["touchend", "pointerup", "click", "keydown"]) {
+    document.addEventListener(type, unlock, { capture: true, passive: true });
+  }
 }
 
 function playPop() {
@@ -434,9 +459,12 @@ function initMuteToggle() {
   const iconOn = $("#icon-sound-on");
   const iconOff = $("#icon-sound-off");
 
+  // SVG följer inte webbläsarens [hidden]-regel – attributet sätts här och
+  // döljs via CSS (.btn-mute svg[hidden]). Högtalare = ljud på.
   const update = () => {
-    iconOn.hidden = isMuted;
-    iconOff.hidden = !isMuted;
+    iconOn.toggleAttribute("hidden", isMuted);
+    iconOff.toggleAttribute("hidden", !isMuted);
+    btn.setAttribute("aria-label", isMuted ? "Sätt på ljud" : "Stäng av ljud");
   };
   update();
 
@@ -1055,6 +1083,7 @@ function init() {
   initCake();
   initPopcorn();
   initMuteToggle();
+  initAudioUnlock();
   initRSVP();
 }
 

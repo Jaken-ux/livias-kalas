@@ -721,6 +721,11 @@ h1, h2, h3, .act-title {
   transition: border-color 0.2s, color 0.2s;
 }
 
+/* SVG följer inte webbläsarens [hidden]-regel – utan detta syns båda ikonerna */
+.btn-mute svg[hidden] {
+  display: none;
+}
+
 .btn-mute:hover {
   border-color: var(--pink);
   color: var(--pink);

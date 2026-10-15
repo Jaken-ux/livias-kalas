@@ -267,38 +267,72 @@ test.describe("Definition of Done", () => {
     expect(nameValue).toBe("TestBarn");
   });
 
-  test("mute toggle persists", async ({ page }) => {
+  test("mute toggle: one visible icon, label toggles, persists", async ({ page }) => {
+    // Faktiskt synliga ikoner (computed display), inte .hidden-egenskapen –
+    // SVG följer inte webbläsarens [hidden]-regel.
+    const shown = () =>
+      page.$$eval("#btn-mute svg", (s) =>
+        s.filter((x) => getComputedStyle(x).display !== "none").map((x) => x.id)
+      );
+    const btn = page.locator("#btn-mute");
+
     await page.goto("/");
     await page.waitForLoadState("networkidle");
-
-    // Scroll to outro
     await page.locator("#act-outro").scrollIntoViewIfNeeded();
     await page.waitForTimeout(1000);
 
-    // Click mute
-    await page.locator("#btn-mute").click();
-    await page.waitForTimeout(200);
+    // Standard: ljud PÅ
+    expect(await shown()).toEqual(["icon-sound-on"]);
+    await expect(btn).toHaveAttribute("aria-label", "Stäng av ljud");
 
-    // Check localStorage
-    const muted = await page.evaluate(() =>
-      localStorage.getItem("livias-kalas-mute")
-    );
-    expect(muted).toBe("true");
+    await btn.click();
+    expect(await shown()).toEqual(["icon-sound-off"]);
+    await expect(btn).toHaveAttribute("aria-label", "Sätt på ljud");
+    expect(await page.evaluate(() => localStorage.getItem("livias-kalas-mute"))).toBe("true");
 
-    // Reload and check
+    // Efter omladdning: fortfarande av
     await page.reload();
     await page.waitForLoadState("networkidle");
-    const mutedAfterReload = await page.evaluate(() =>
-      localStorage.getItem("livias-kalas-mute")
-    );
-    expect(mutedAfterReload).toBe("true");
+    expect(await shown()).toEqual(["icon-sound-off"]);
+    await expect(btn).toHaveAttribute("aria-label", "Sätt på ljud");
 
-    // Sound off icon should be visible (hidden attribute removed by JS)
+    // Och på igen
+    await page.locator("#act-outro").scrollIntoViewIfNeeded();
+    await btn.click();
+    expect(await shown()).toEqual(["icon-sound-on"]);
+    await expect(btn).toHaveAttribute("aria-label", "Stäng av ljud");
+  });
+
+  test("audio: no AudioContext at load, running after first tap, resumed after suspend", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    // Registrera alla AudioContext som sidan skapar
+    await page.addInitScript(() => {
+      const Orig = window.AudioContext;
+      (window as any).__ctxs = [];
+      window.AudioContext = class extends Orig {
+        constructor(...a: any[]) {
+          super(...a);
+          (window as any).__ctxs.push(this);
+        }
+      } as typeof AudioContext;
+    });
+    const states = () => page.evaluate(() => (window as any).__ctxs.map((c: AudioContext) => c.state));
+
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    const soundOffHidden = await page.locator("#icon-sound-off").evaluate(
-      (el) => (el as HTMLElement).hidden
-    );
-    expect(soundOffHidden).toBe(false);
+    expect(await states()).toEqual([]); // inte vid sidladdning
+
+    await page.locator("#btn-hero").tap();
+    await expect.poll(states).toEqual(["running"]);
+
+    // iOS pausar kontexten vid appbyte – nästa tryck ska väcka den
+    await page.evaluate(() => (window as any).__ctxs[0].suspend());
+    await expect.poll(states).toEqual(["suspended"]);
+    await page.locator("#btn-hero").tap();
+    await expect.poll(states).toEqual(["running"]);
+    await ctx.close();
   });
 
   test("prefers-reduced-motion: page readable", async ({ browser }) => {
