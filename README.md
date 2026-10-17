@@ -23,6 +23,14 @@ Lägg till `?g=Namn` i URL:en, så står det "…och Namn är bjuden på" i intr
 https://<user>.github.io/livias-kalas/?g=Emma
 ```
 
+## Sparat OSA-svar
+
+Svaret sparas bara i webbläsarens `localStorage` (nyckel `livias-kalas-rsvp`). Det följer inte med till andra enheter eller webbläsare och är inte kopplat till `?g`. Lägg till `?reset=1` för att rensa svaret i den aktuella webbläsaren. Sidan laddas då om utan parametern:
+
+```
+https://<user>.github.io/livias-kalas/?reset=1
+```
+
 ## Deploya till GitHub Pages
 
 1. Initiera repo och pusha:

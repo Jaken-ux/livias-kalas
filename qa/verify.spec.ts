@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, devices } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -753,5 +753,86 @@ test.describe("Sound files", () => {
     await page.locator("#btn-pizza").tap();
     await page.waitForTimeout(500);
     expect(await playedSince(n)).toEqual([]);
+  });
+});
+
+// Pixel 7 utan defaultBrowserType (får inte sättas i en describe)
+const { defaultBrowserType: _pixelBrowser, ...pixel7 } = devices["Pixel 7"];
+
+test.describe("Android hero (Pixel 7)", () => {
+  test.use(pixel7);
+
+  const heroState = (page: import("@playwright/test").Page) =>
+    page.evaluate(() => {
+      const img = document.querySelector<HTMLImageElement>("#hero-frame img")!;
+      return {
+        naturalWidth: img.naturalWidth,
+        opacity: getComputedStyle(document.querySelector("#hero-frame")!).opacity,
+      };
+    });
+
+  test("hero image loads and is fully visible", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await expect.poll(() => heroState(page)).toEqual({ naturalWidth: 864, opacity: "1" });
+  });
+
+  test("hero becomes visible even if the intro animation never runs (no JS)", async ({ browser }) => {
+    const ctx = await browser.newContext({ ...pixel7, javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const s = await heroState(page);
+    expect(s.naturalWidth).toBeGreaterThan(0);
+    await expect.poll(() => heroState(page).then((x) => x.opacity), { timeout: 5000 }).toBe("1");
+    await ctx.close();
+  });
+});
+
+test.describe("RSVP persistence", () => {
+  test("answer lives only in localStorage, not tied to ?g", async ({ page, browser }) => {
+    await page.goto("/?g=Emma");
+    await page.waitForLoadState("networkidle");
+    await page.locator("#act-rsvp").scrollIntoViewIfNeeded();
+    await page.locator("#btn-yes").click();
+    await page.locator("#btn-submit").click(); // Formspree mockas i beforeEach
+    await expect(page.locator("#rsvp-summary")).toBeVisible({ timeout: 5000 });
+
+    // Ingen state utanför localStorage
+    expect(page.url()).toMatch(/\/\?g=Emma$/);
+    expect(await page.context().cookies()).toEqual([]);
+    expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
+    expect(await page.evaluate(() => Object.keys(localStorage))).toContain("livias-kalas-rsvp");
+
+    // Samma webbläsare, annat ?g: svaret visas ändå (per webbläsare, inte per namn)
+    await page.goto("/?g=Olle");
+    await expect(page.locator("#rsvp-summary")).toBeVisible();
+
+    // Annan webbläsare, samma URL: inget svar följer med
+    const other = await browser.newContext();
+    const p2 = await other.newPage();
+    await p2.goto("/?g=Emma");
+    await expect(p2.locator("#rsvp-form")).toBeVisible();
+    await expect(p2.locator("#rsvp-summary")).toBeHidden();
+    await other.close();
+  });
+
+  test("?reset=1 clears the saved answer and reloads without the parameter", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() =>
+      localStorage.setItem(
+        "livias-kalas-rsvp",
+        JSON.stringify({ name: "Emma", attending: "ja", diet: "", phone: "", message: "" })
+      )
+    );
+    await page.evaluate(() => localStorage.setItem("livias-kalas-mute", "true"));
+    await page.goto("/?g=Emma&reset=1");
+    await page.waitForURL(/\/\?g=Emma$/);
+    await page.waitForLoadState("networkidle");
+    expect(await page.evaluate(() => localStorage.getItem("livias-kalas-rsvp"))).toBeNull();
+    // Bara svaret rensas, inte ljudinställningen
+    expect(await page.evaluate(() => localStorage.getItem("livias-kalas-mute"))).toBe("true");
+    await expect(page.locator("#rsvp-form")).toBeVisible();
+    await expect(page.locator("#rsvp-summary")).toBeHidden();
   });
 });

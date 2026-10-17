@@ -1,5 +1,8 @@
 # Decisions Log — Livias Kalas
 
+## 2026-10-17 — OSA-svar per webbläsare, ?reset=1, skydd för hero-porträttet
+Rapporterat: OSA-svaret följde med till andra enheter. Granskat utan fynd: svaret ligger bara i `localStorage`, utan cookies, sessionStorage, hash, URL-state eller koppling till `?g`. Ett test bekräftar att en annan webbläsare med samma URL inte ser svaret. Trolig förklaring: det förifyllda namnet från `?g` eller samma webbläsare; inte utrett vidare. Tillagt `?reset=1`, som rensar bara svaret, inte ljudinställningen. Rapporterat: porträttet syns inte på Android. Gick inte att återskapa i Pixel 7-emulering. Som skydd tonas `.hero-frame` in via CSS efter 3 s om GSAP aldrig kör (hypotes, ej bekräftad orsak). Övriga intro-element har samma beroende av GSAP och saknar skydd. Commit: "Fix RSVP persistence and Android hero".
+
 ## 2026-10-15 — Ljudoriginalen ur repot; nattmössans ljud på tryck 2 och 3
 `assets/sound/` är gitignorerad och originalen är borttagna ur repot (de finns kvar lokalt). Bara `public/sounds/` publiceras. Obs: originalen finns kvar i git-historiken (commit 402e0ac). Att rensa dem kräver omskriven historik och force-push, och det är inte gjort. Nattmössans ljud (sparkle 0.6) spelas nu både när mössan dalar ner och när den flyger iväg. Ersätter tolkningen i föregående post. Commit: "Remove sound originals".
 

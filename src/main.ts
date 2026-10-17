@@ -1059,7 +1059,19 @@ function initRSVP() {
 }
 
 // ===== INIT =====
+// ?reset=1 rensar sparat OSA-svar (bara i denna webbläsare) och laddar om
+// utan parametern. Övriga parametrar, t.ex. ?g, behålls.
+function handleReset(): boolean {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("reset") !== "1") return false;
+  localStorage.removeItem(STORAGE_KEY);
+  url.searchParams.delete("reset");
+  window.location.replace(url.toString());
+  return true;
+}
+
 function init() {
+  if (handleReset()) return;
   initGreeting();
   createStars();
   populateContent();
