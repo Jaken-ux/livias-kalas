@@ -12,16 +12,26 @@ const reducedMotion = window.matchMedia(
 ).matches;
 
 // ===== STORAGE KEYS =====
-const STORAGE_KEY = "livias-kalas-rsvp";
+const STORAGE_PREFIX = "livias-kalas-rsvp";
+
+// Gästens namn från ?g, rensat (samma regler för hälsning, förifyllning och nyckel)
+function guestName(): string {
+  const g = new URLSearchParams(window.location.search).get("g") ?? "";
+  return g.slice(0, 30).replace(/[<>&"'/]/g, "").trim();
+}
+
+// OSA-svaret sparas per gäst i denna webbläsare: livias-kalas-rsvp:<namn i
+// gemener>, eller :default utan ?g. Annars visades t.ex. ett svar gjort via
+// ?g=Livia som "Ni har svarat" för alla andra ?g på samma telefon.
+function rsvpKey(): string {
+  return `${STORAGE_PREFIX}:${guestName().toLowerCase() || "default"}`;
+}
 const MUTE_KEY = "livias-kalas-mute";
 
 // ===== GREETING =====
 function initGreeting() {
-  const params = new URLSearchParams(window.location.search);
-  const g = params.get("g");
-  if (g) {
-    const safe = g.slice(0, 30).replace(/[<>&"'/]/g, "").trim();
-    if (!safe) return;
+  const safe = guestName();
+  if (safe) {
     // "...och Emma är bjuden på" – och barnets namn förifylls i OSA
     const el = $("#invitee");
     if (el) el.textContent = safe;
@@ -881,7 +891,9 @@ function initRSVP() {
   });
 
   // Check stored answer
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const key = rsvpKey();
+  (window as unknown as { __rsvpKey?: string }).__rsvpKey = key; // visas med ?debug=1
+  const stored = localStorage.getItem(key);
   let isUpdate = false;
 
   if (stored) {
@@ -910,7 +922,7 @@ function initRSVP() {
     fieldChanged.value = "yes";
 
     // Prefill
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(key);
     if (stored) {
       try {
         const data: StoredRSVP = JSON.parse(stored);
@@ -983,7 +995,7 @@ function initRSVP() {
           phone: fieldPhone.value.trim(),
           message: fieldMessage.value.trim(),
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(rsvpData));
+        localStorage.setItem(key, JSON.stringify(rsvpData));
 
         // Success state
         if (fieldAttending.value === "ja") {
@@ -1017,12 +1029,14 @@ function initRSVP() {
 }
 
 // ===== INIT =====
-// ?reset=1 rensar sparat OSA-svar (bara i denna webbläsare) och laddar om
-// utan parametern. Övriga parametrar, t.ex. ?g, behålls.
+// ?reset=1 rensar alla sparade OSA-svar i denna webbläsare (alla gäster, även
+// den gamla nyckeln utan gäst) och laddar om utan parametern. ?g behålls.
 function handleReset(): boolean {
   const url = new URL(window.location.href);
   if (url.searchParams.get("reset") !== "1") return false;
-  localStorage.removeItem(STORAGE_KEY);
+  Object.keys(localStorage)
+    .filter((k) => k === STORAGE_PREFIX || k.startsWith(`${STORAGE_PREFIX}:`))
+    .forEach((k) => localStorage.removeItem(k));
   url.searchParams.delete("reset");
   window.location.replace(url.toString());
   return true;

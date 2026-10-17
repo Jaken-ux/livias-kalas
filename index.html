@@ -33,14 +33,24 @@
         if (!pre) return;
         var img = document.querySelector("#hero-frame img");
         var frame = document.getElementById("hero-frame");
-        var saved = null;
-        try { saved = localStorage.getItem("livias-kalas-rsvp"); } catch (x) { saved = "(localStorage ej åtkomlig)"; }
+        // Nyckeln sätts av huvudskriptet (rsvpKey() i main.ts) – samma som det läste
+        var key = window.__rsvpKey;
+        var saved = null, allKeys = [];
+        try {
+          saved = key ? localStorage.getItem(key) : null;
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf("livias-kalas-rsvp") === 0) allKeys.push(k);
+          }
+        } catch (x) { saved = "(localStorage ej åtkomlig)"; }
         var lines = [
           "UA: " + navigator.userAgent,
           "Klasser på <html>: " + root.className,
           "Hero: src=" + (img && (img.currentSrc || img.src)) + " naturalWidth=" + (img && img.naturalWidth) +
             " opacity=" + (frame && getComputedStyle(frame).opacity),
-          "Sparat OSA-svar: " + (saved ? saved.slice(0, 120) : "inget"),
+          "OSA-nyckel som lästes: " + (key || "(ingen – huvudskriptet körde inte rsvp-steget)"),
+          "Sparat svar under den nyckeln: " + (saved ? saved.slice(0, 120) : "inget"),
+          "Alla OSA-nycklar i webbläsaren: " + (allKeys.length ? allKeys.join(", ") : "inga"),
           "Fel (" + errors.length + "):"
         ].concat(errors.length ? errors : ["(inga)"]);
         pre.textContent = lines.join("\n");

@@ -233,7 +233,7 @@ test.describe("Definition of Done", () => {
 
     await page.evaluate(() => {
       localStorage.setItem(
-        "livias-kalas-rsvp",
+        "livias-kalas-rsvp:default",
         JSON.stringify({
           name: "TestBarn",
           attending: "ja",
@@ -439,7 +439,7 @@ test.describe("Definition of Done", () => {
     await page.waitForLoadState("networkidle");
     await page.evaluate(() => {
       localStorage.setItem(
-        "livias-kalas-rsvp",
+        "livias-kalas-rsvp:default",
         JSON.stringify({
           name: "TestBarn",
           attending: "ja",
@@ -790,7 +790,7 @@ test.describe("Android hero (Pixel 7)", () => {
 });
 
 test.describe("RSVP persistence", () => {
-  test("answer lives only in localStorage, not tied to ?g", async ({ page, browser }) => {
+  test("answer is stored per guest (?g) in localStorage only", async ({ page, browser }) => {
     await page.goto("/?g=Emma");
     await page.waitForLoadState("networkidle");
     await page.locator("#act-rsvp").scrollIntoViewIfNeeded();
@@ -798,15 +798,28 @@ test.describe("RSVP persistence", () => {
     await page.locator("#btn-submit").click(); // Formspree mockas i beforeEach
     await expect(page.locator("#rsvp-summary")).toBeVisible({ timeout: 5000 });
 
-    // Ingen state utanför localStorage
+    // Ingen state utanför localStorage; nyckeln är per gäst
     expect(page.url()).toMatch(/\/\?g=Emma$/);
     expect(await page.context().cookies()).toEqual([]);
     expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
-    expect(await page.evaluate(() => Object.keys(localStorage))).toContain("livias-kalas-rsvp");
+    expect(
+      await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("livias-kalas-rsvp")))
+    ).toEqual(["livias-kalas-rsvp:emma"]);
 
-    // Samma webbläsare, annat ?g: svaret visas ändå (per webbläsare, inte per namn)
+    // Annan gäst i samma webbläsare: tomt formulär (namnet förifyllt), ingen sammanfattning
     await page.goto("/?g=Olle");
+    await expect(page.locator("#rsvp-summary")).toBeHidden();
+    await expect(page.locator("#rsvp-form")).toBeVisible();
+    await expect(page.locator("#field-name")).toHaveValue("Olle");
+
+    // Utan ?g: default-nyckeln, inte Emmas svar
+    await page.goto("/");
+    await expect(page.locator("#rsvp-summary")).toBeHidden();
+
+    // Samma gäst igen, annan skiftläge: Emmas svar visas
+    await page.goto("/?g=emma");
     await expect(page.locator("#rsvp-summary")).toBeVisible();
+    await expect(page.locator("#summary-text")).toContainText("Emma");
 
     // Annan webbläsare, samma URL: inget svar följer med
     const other = await browser.newContext();
@@ -817,23 +830,47 @@ test.describe("RSVP persistence", () => {
     await other.close();
   });
 
-  test("?reset=1 clears the saved answer and reloads without the parameter", async ({ page }) => {
+  test("the old unscoped key is no longer read", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() =>
       localStorage.setItem(
         "livias-kalas-rsvp",
-        JSON.stringify({ name: "Emma", attending: "ja", diet: "", phone: "", message: "" })
+        JSON.stringify({ name: "Livia", attending: "ja", diet: "", phone: "", message: "" })
       )
     );
-    await page.evaluate(() => localStorage.setItem("livias-kalas-mute", "true"));
+    for (const url of ["/", "/?g=Livia", "/?g=Emma"]) {
+      await page.goto(url);
+      await page.waitForLoadState("networkidle");
+      await expect(page.locator("#rsvp-summary"), url).toBeHidden();
+    }
+  });
+
+  test("?reset=1 clears all saved answers and reloads without the parameter", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() => {
+      const a = JSON.stringify({ name: "Emma", attending: "ja", diet: "", phone: "", message: "" });
+      localStorage.setItem("livias-kalas-rsvp", a); // gammal nyckel
+      localStorage.setItem("livias-kalas-rsvp:emma", a);
+      localStorage.setItem("livias-kalas-rsvp:default", a);
+      localStorage.setItem("livias-kalas-mute", "true");
+    });
     await page.goto("/?g=Emma&reset=1");
     await page.waitForURL(/\/\?g=Emma$/);
     await page.waitForLoadState("networkidle");
-    expect(await page.evaluate(() => localStorage.getItem("livias-kalas-rsvp"))).toBeNull();
-    // Bara svaret rensas, inte ljudinställningen
+    expect(
+      await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("livias-kalas-rsvp")))
+    ).toEqual([]);
+    // Bara svaren rensas, inte ljudinställningen
     expect(await page.evaluate(() => localStorage.getItem("livias-kalas-mute"))).toBe("true");
     await expect(page.locator("#rsvp-form")).toBeVisible();
     await expect(page.locator("#rsvp-summary")).toBeHidden();
+  });
+
+  test("?debug=1 shows which key was read", async ({ page }) => {
+    await page.goto("/?g=Livia&debug=1");
+    await expect(page.locator("#debug")).toContainText("OSA-nyckel som lästes: livias-kalas-rsvp:livia", {
+      timeout: 6000,
+    });
   });
 });
 
