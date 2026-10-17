@@ -27,3 +27,32 @@ export const content = {
     repoName: "livias-kalas",
   },
 };
+
+// Texter och länkar som ska synas även utan JS. En enda källa: vite.config.ts
+// fyller i dem i index.html vid bygget, och populateContent() i main.ts sätter
+// samma värden i webbläsaren. Nyckel = element-id i index.html.
+export function staticText(c = content): Record<string, string> {
+  const p = c.party;
+  return {
+    "ticket-date": p.dateText,
+    "ticket-time": `Kl ${p.start} – ${p.end}`,
+    "ticket-dresscode": p.dresscode ?? "",
+    "address-street": p.street,
+    "address-postal": p.postal,
+    "beat-pizza-text": p.program[0],
+    "beat-movie-text": p.program[1],
+    "beat-cake-text": p.program[2],
+    "gifts-line": p.gifts ?? "",
+    "contact-line": p.contact ?? "",
+    "rsvp-deadline": c.rsvp.deadlineText,
+    "outro-see-you": `Vi ses den ${Number(p.dateISO.slice(8, 10))}:e!`,
+  };
+}
+
+export function staticHref(c = content): Record<string, string> {
+  const q = encodeURIComponent(c.party.mapsQuery);
+  return {
+    "btn-google-maps": `https://www.google.com/maps/search/?api=1&query=${q}`,
+    "btn-apple-maps": `https://maps.apple.com/?q=${q}`,
+  };
+}

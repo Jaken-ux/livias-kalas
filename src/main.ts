@@ -1,4 +1,4 @@
-import { content } from "./content";
+import { content, staticText, staticHref } from "./content";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import confetti from "canvas-confetti";
@@ -76,22 +76,24 @@ function createStars() {
 
 // ===== POPULATE CONTENT =====
 function populateContent() {
-  // Ticket
-  const ticketDate = $("#ticket-date");
-  if (ticketDate) ticketDate.textContent = content.party.dateText;
-  const ticketTime = $("#ticket-time");
-  if (ticketTime)
-    ticketTime.textContent = `Kl ${content.party.start} – ${content.party.end}`;
-  const ticketDress = $("#ticket-dresscode");
-  if (ticketDress) {
-    if (content.party.dresscode) {
-      ticketDress.textContent = content.party.dresscode;
-    } else {
-      ticketDress.style.display = "none";
-    }
+  // Fasta texter och länkar finns redan i HTML:en (ifyllda vid bygget, se
+  // vite.config.ts). Sätts igen här så att dev och bygge alltid stämmer.
+  for (const [id, text] of Object.entries(staticText())) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+  for (const [id, href] of Object.entries(staticHref())) {
+    const el = document.getElementById(id) as HTMLAnchorElement | null;
+    if (el) el.href = href;
+  }
+  const formSubject = $<HTMLInputElement>("#form-subject");
+  if (formSubject) formSubject.value = content.rsvp.subject;
+  if (!content.party.dresscode) {
+    const ticketDress = $("#ticket-dresscode");
+    if (ticketDress) ticketDress.style.display = "none";
   }
 
-  // Countdown
+  // Nedräkningen beror på dagens datum och kräver JS
   const countdownEl = $("#countdown");
   if (countdownEl) {
     const partyDate = new Date(content.party.dateISO + "T00:00:00");
@@ -108,50 +110,6 @@ function populateContent() {
       countdownEl.textContent =
         "Kalaset har varit – tack för att ni kom!";
     }
-  }
-
-  // Address
-  const street = $("#address-street");
-  if (street) street.textContent = content.party.street;
-  const postal = $("#address-postal");
-  if (postal) postal.textContent = content.party.postal;
-
-  const q = encodeURIComponent(content.party.mapsQuery);
-  const googleBtn = $<HTMLAnchorElement>("#btn-google-maps");
-  if (googleBtn)
-    googleBtn.href = `https://www.google.com/maps/search/?api=1&query=${q}`;
-  const appleBtn = $<HTMLAnchorElement>("#btn-apple-maps");
-  if (appleBtn) appleBtn.href = `https://maps.apple.com/?q=${q}`;
-
-  // Program beats
-  const beatPizza = $("#beat-pizza-text");
-  if (beatPizza) beatPizza.textContent = content.party.program[0];
-  const beatMovie = $("#beat-movie-text");
-  if (beatMovie) beatMovie.textContent = content.party.program[1];
-  const beatCake = $("#beat-cake-text");
-  if (beatCake) beatCake.textContent = content.party.program[2];
-
-  // Extra info
-  const giftsLine = $("#gifts-line");
-  if (giftsLine) {
-    giftsLine.textContent = content.party.gifts ?? "";
-  }
-  const contactLine = $("#contact-line");
-  if (contactLine) {
-    contactLine.textContent = content.party.contact ?? "";
-  }
-
-  // RSVP
-  const deadline = $("#rsvp-deadline");
-  if (deadline) deadline.textContent = content.rsvp.deadlineText;
-  const formSubject = $<HTMLInputElement>("#form-subject");
-  if (formSubject) formSubject.value = content.rsvp.subject;
-
-  // Outro
-  const outroSeeYou = $("#outro-see-you");
-  if (outroSeeYou) {
-    const day = new Date(content.party.dateISO + "T00:00:00").getDate();
-    outroSeeYou.textContent = `Vi ses den ${day}:e!`;
   }
 }
 
@@ -1070,20 +1028,38 @@ function handleReset(): boolean {
   return true;
 }
 
+// Varje steg körs för sig: ett fel i t.ex. ljud eller konfetti ska inte stoppa
+// resten. Fel loggas till window.__errors (visas med ?debug=1, se <head>).
 function init() {
   if (handleReset()) return;
-  initGreeting();
-  createStars();
-  populateContent();
-  initAnimations();
-  initSignpost();
-  initHero();
-  initPizza();
-  initCake();
-  initPopcorn();
-  initMuteToggle();
-  initAudioUnlock();
-  initRSVP();
+  const root = document.documentElement;
+  const steps: [string, () => void][] = [
+    ["greeting", initGreeting],
+    ["stars", createStars],
+    ["content", populateContent],
+    ["animations", initAnimations],
+    ["signpost", initSignpost],
+    ["hero", initHero],
+    ["pizza", initPizza],
+    ["cake", initCake],
+    ["popcorn", initPopcorn],
+    ["mute", initMuteToggle],
+    ["audio", initAudioUnlock],
+    ["rsvp", initRSVP],
+  ];
+  let failed = false;
+  for (const [name, step] of steps) {
+    try {
+      step();
+    } catch (e) {
+      failed = true;
+      const errs = ((window as unknown as { __errors?: string[] }).__errors ??= []);
+      errs.push(`init:${name}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  // Något steg föll: visa allt utan inanimering i stället för att lämna dolt innehåll
+  if (failed) root.classList.remove("js");
+  root.classList.add("js-ready");
 }
 
 if (document.readyState === "loading") {

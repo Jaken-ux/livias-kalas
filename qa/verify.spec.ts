@@ -836,3 +836,88 @@ test.describe("RSVP persistence", () => {
     await expect(page.locator("#rsvp-summary")).toBeHidden();
   });
 });
+
+test.describe("Resilience (no JS, init crash, blocked script)", () => {
+  test.use(pixel7);
+
+  // Synligt = opacity 1 i hela kedjan upp till body och inte display:none
+  const visible = (page: import("@playwright/test").Page, sel: string) =>
+    page.$eval(sel, (el) => {
+      if (el.getClientRects().length === 0) return false;
+      for (let n: Element | null = el; n; n = n.parentElement) {
+        if (getComputedStyle(n).opacity !== "1") return false;
+      }
+      return true;
+    });
+
+  const CONTENT = [
+    ["#main-title", "Livia fyller 8!"],
+    ["#ticket-date", "Fredag 13 november"],
+    ["#ticket-time", "Kl 17:00"],
+    ["#address-street", "Kardemummagränd 20"],
+    ["#beat-pizza-text", "Pizza till middag"],
+    ["#beat-cake-text", "Tårta"],
+    ["#rsvp-deadline", "Svara senast"],
+    ["#outro-see-you", "Vi ses den 13:e!"],
+  ] as const;
+
+  const expectAllContentVisible = async (page: import("@playwright/test").Page) => {
+    expect(await visible(page, "#hero-frame")).toBe(true);
+    expect(await page.$eval("#hero-frame img", (i) => (i as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    for (const [sel, text] of CONTENT) {
+      await expect(page.locator(sel)).toContainText(text);
+      expect(await visible(page, sel), sel).toBe(true);
+    }
+    // Ingen OSA-sammanfattning utan sparat svar
+    await expect(page.locator("#rsvp-summary")).toBeHidden();
+  };
+
+  test("without JS: hero, all text and the address are visible, no summary", async ({ browser }) => {
+    const ctx = await browser.newContext({ ...pixel7, javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await expectAllContentVisible(page);
+    await expect(page.locator("#rsvp-form")).toBeVisible();
+    await expect(page.locator("#debug")).toBeHidden();
+    await ctx.close();
+  });
+
+  test("a crashing init step does not stop the rest; ?debug=1 shows the error", async ({ page }) => {
+    await page.addInitScript(() => {
+      const orig = Document.prototype.getElementById;
+      Document.prototype.getElementById = function (id: string) {
+        if (id === "tiara") throw new Error("test-krasch");
+        return orig.call(this, id);
+      };
+    });
+    await page.goto("/?debug=1");
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("html")).toHaveClass(/js-ready/);
+    await expect(page.locator("html")).not.toHaveClass(/(^|\s)js(\s|$)/);
+    // Steg efter det trasiga körde ändå: pizzan och ljudknappen fungerar
+    await page.locator("#btn-pizza").tap();
+    await expect(page.locator("#pizza-label")).toHaveText("Mums!");
+    expect(
+      await page.$$eval("#btn-mute svg", (s) => s.filter((x) => getComputedStyle(x).display !== "none").length)
+    ).toBe(1);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expectAllContentVisible(page);
+    await expect(page.locator("#debug")).toBeVisible({ timeout: 6000 });
+    await expect(page.locator("#debug")).toContainText("init:hero: test-krasch");
+  });
+
+  test("main script blocked: failsafe reveals everything within 4 s, debug explains", async ({ page }) => {
+    await page.route(/\/assets\/index-.*\.js$/, (r) => r.abort());
+    await page.goto("/?debug=1");
+    await expect(page.locator("html")).not.toHaveClass(/(^|\s)js(\s|$)/, { timeout: 5000 });
+    await expectAllContentVisible(page);
+    await expect(page.locator("#debug")).toContainText("Nödspärr", { timeout: 6000 });
+  });
+
+  test("debug panel stays hidden without ?debug=1", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForTimeout(5000);
+    await expect(page.locator("#debug")).toBeHidden();
+  });
+});

@@ -6,6 +6,48 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Livia fyller 8 – du är bjuden!</title>
   <meta name="description" content="Du är bjuden på Livias pyjamas- och filmmyskalas!" />
+  <!-- Körs före allt annat, ES5 med flit (ska fungera även där huvudskriptet inte gör det).
+       1) Klassen "js" låter CSS dölja element som animeras in – utan JS syns allt.
+       2) Nödspärr: har huvudskriptet inte satt "js-ready" inom 4 s tas "js" bort så allt syns.
+       3) Felrapport: alla JS-fel samlas och visas i #debug med ?debug=1. -->
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.className += " js";
+      var errors = (window.__errors = []);
+      window.addEventListener("error", function (e) {
+        errors.push((e.message || "Okänt fel") + (e.filename ? " @ " + e.filename.split("/").pop() + ":" + e.lineno + ":" + e.colno : ""));
+      }, true);
+      window.addEventListener("unhandledrejection", function (e) {
+        errors.push("Promise: " + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+      });
+      setTimeout(function () {
+        if (root.className.indexOf("js-ready") === -1) {
+          root.className = root.className.replace(/\bjs\b/g, "");
+          errors.push("Nödspärr: huvudskriptet blev inte klart inom 4 s – allt visas utan animation");
+        }
+      }, 4000);
+      if (!/[?&]debug=1(&|$)/.test(location.search)) return;
+      setTimeout(function () {
+        var pre = document.getElementById("debug");
+        if (!pre) return;
+        var img = document.querySelector("#hero-frame img");
+        var frame = document.getElementById("hero-frame");
+        var saved = null;
+        try { saved = localStorage.getItem("livias-kalas-rsvp"); } catch (x) { saved = "(localStorage ej åtkomlig)"; }
+        var lines = [
+          "UA: " + navigator.userAgent,
+          "Klasser på <html>: " + root.className,
+          "Hero: src=" + (img && (img.currentSrc || img.src)) + " naturalWidth=" + (img && img.naturalWidth) +
+            " opacity=" + (frame && getComputedStyle(frame).opacity),
+          "Sparat OSA-svar: " + (saved ? saved.slice(0, 120) : "inget"),
+          "Fel (" + errors.length + "):"
+        ].concat(errors.length ? errors : ["(inga)"]);
+        pre.textContent = lines.join("\n");
+        pre.hidden = false;
+      }, 4500);
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -359,6 +401,8 @@
     </section>
 
   </main>
+
+  <pre id="debug" class="debug" hidden></pre>
 
   <script type="module" src="/src/main.ts"></script>
 </body>
